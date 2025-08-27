@@ -58,6 +58,8 @@ Runs unit, database, and end-to-end tests using testcontainers for full isolatio
 | `make lint` | Check code format and lint |
 | `make shell` | Open shell in API container |
 | `make logs` | View API container logs |
+| `make migrate` | Run database migrations |
+| `make migration m="msg"` | Generate a new database migration |
 
 ## Project Structure
 
