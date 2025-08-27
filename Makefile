@@ -76,82 +76,91 @@ setup: ## Initialize project: install dependencies, create .env files and pull r
 up: ## Start all development containers in detached mode
 	@echo "Starting up development services..."
 	@ln -sf .env.dev .env
-	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) up -d
+	COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) up -d
 
 .PHONY: down
 down: ## Stop and remove all development containers
 	@echo "Shutting down development services..."
 	@ln -sf .env.dev .env
-	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) down --remove-orphans
+	COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) down --remove-orphans
 
 .PHONY: clean
 clean: ## Stop and remove all dev containers, networks, and volumes (use with CONFIRM=1)
 	@if [ "$(CONFIRM)" != "1" ]; then echo "This is a destructive operation. Please run 'make clean CONFIRM=1' to confirm."; exit 1; fi
 	@echo "Cleaning up all development Docker resources (including volumes)..."
 	@ln -sf .env.dev .env
-	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) down --volumes --remove-orphans
+	COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) down --volumes --remove-orphans
 
 .PHONY: rebuild
 rebuild: ## Rebuild the api service without cache and restart it
 	@echo "Rebuilding api service with --no-cache..."
 	@ln -sf .env.dev .env
-	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) build --no-cache api
-	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) up -d api
+	COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) build --no-cache api
+	COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) up -d api
 
 .PHONY: up-prod
 up-prod: ## Start all production-like containers
 	@echo "Starting up production-like services..."
 	@ln -sf .env.prod .env
-	$(DOCKER_CMD) compose -f docker-compose.yml --project-name $(PROD_PROJECT_NAME) up -d --build --pull always --remove-orphans
+	COMPOSE_PROJECT_NAME=$(PROD_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml --project-name $(PROD_PROJECT_NAME) up -d --build --pull always --remove-orphans
 
 .PHONY: down-prod
 down-prod: ## Stop and remove all production-like containers
 	@echo "Shutting down production-like services..."
 	@ln -sf .env.prod .env
-	$(DOCKER_CMD) compose -f docker-compose.yml --project-name $(PROD_PROJECT_NAME) down --remove-orphans
+	COMPOSE_PROJECT_NAME=$(PROD_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml --project-name $(PROD_PROJECT_NAME) down --remove-orphans
 
 .PHONY: logs
 logs: ## View the logs for the development API service
 	@echo "Following logs for the dev api service..."
 	@ln -sf .env.dev .env
-	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) logs -f api
+	COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) logs -f api
 
 .PHONY: shell
 shell: ## Open a shell inside the running development API container
 	@echo "Opening shell in dev api container..."
 	@ln -sf .env.dev .env
-	@$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) exec api /bin/sh || \
+	@COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) exec api /bin/sh || \
 		(echo "Failed to open shell. Is the container running? Try 'make up'" && exit 1)
 
 .PHONY: migrate
 migrate: ## Run database migrations against the development database
 	@echo "Running database migrations for dev environment..."
 	@ln -sf .env.dev .env
-	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) exec api sh -c ". /app/.venv/bin/activate && alembic upgrade head"
+	COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) exec api sh -c ". /app/.venv/bin/activate && alembic upgrade head"
 
 # ==============================================================================
 # CODE QUALITY & TESTING
 # ==============================================================================
 
 .PHONY: format
-format: ## Format the code using Black
+format: ## Format code with Black and fix issues with Ruff
 	@echo "Formatting code with Black..."
-	poetry run black src/ tests/
-
-.PHONY: format-check
-format-check: ## Check if the code is formatted with Black
-	@echo "Checking code format with Black..."
-	poetry run black --check src/ tests/
+	@poetry run black src/ tests/
+	@echo "Fixing code issues with Ruff..."
+	@poetry run ruff check src/ tests/ --fix
 
 .PHONY: lint
-lint: ## Lint and fix the code with Ruff automatically
-	@echo "Linting and fixing code with Ruff..."
-	poetry run ruff check src/ tests/ --fix
-
-.PHONY: lint-check
-lint-check: ## Check the code for issues with Ruff
+lint: ## Check code format with Black and lint with Ruff (without fixes)
+	@echo "Checking code format with Black..."
+	@poetry run black --check src/ tests/
 	@echo "Checking code with Ruff..."
-	poetry run ruff check src/ tests/
+	@poetry run ruff check src/ tests/
+
+.PHONY: build-test
+build-test: ## Build Docker image and run smoke tests in clean environment
+	@echo "Building Docker image and running smoke tests..."
+	@ln -sf .env.test .env
+	@$(DOCKER_CMD) build --target runner -t $(TEST_PROJECT_NAME):test . || (echo "Docker build failed"; exit 1)
+	@echo "Running smoke tests in Docker container..."
+	@$(DOCKER_CMD) run --rm \
+		-v $(CURDIR):/workspace \
+		-w /workspace \
+		--env-file .env.test \
+		$(TEST_PROJECT_NAME):test \
+		sh -c "poetry install --no-root && poetry run python -m pytest tests/unit/" || (echo "Smoke tests failed"; exit 1)
+	@echo "Cleaning up test image..."
+	@$(DOCKER_CMD) rmi $(TEST_PROJECT_NAME):test || true
 
 .PHONY: unit-test
 unit-test: ## Run the fast, database-independent unit tests locally

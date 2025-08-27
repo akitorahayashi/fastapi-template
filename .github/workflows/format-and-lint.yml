@@ -28,7 +28,4 @@ jobs:
         run: make setup
 
       - name: Run Ruff Linter
-        run: make lint-check
-
-      - name: Run Black Formatter Check
-        run: make format-check
+        run: make lint

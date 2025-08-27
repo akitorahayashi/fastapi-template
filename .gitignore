@@ -34,11 +34,10 @@ pip-log.txt
 .coverage.*
 htmlcov/
 
-# Visual Studio Code
+# editor config
 .vscode/
-
-# JetBrains (PyCharm, etc.)
 .idea/
+.claude/
 
 # Sublime Text
 *.sublime-project
