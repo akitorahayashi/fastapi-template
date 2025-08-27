@@ -22,7 +22,7 @@ def _initialize_factory():
     with _lock:
         if _engine is None:
             settings = Settings()
-            _engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+            _engine = create_engine(settings.database_url, pool_pre_ping=True)
             _SessionLocal = sessionmaker(
                 autocommit=False, autoflush=False, bind=_engine
             )

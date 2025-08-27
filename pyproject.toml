@@ -1,17 +1,15 @@
 [tool.poetry]
-name = "pvt-llm-api"
+name = "fastapi-boilerplate"
 version = "0.1.0"
-description = "A local LLM wrapped as an API for reusable access."
+description = "A production-ready FastAPI boilerplate with containerization, database integration, and more."
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
-packages = [{ include = "*", from = "src" }]
+packages = [{ include = "src" }]
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"
 alembic = ">=1.13.1,<2.0.0"
 fastapi = ">=0.116.1,<0.117.0"
-jinja2 = ">=3.1.4,<4.0.0"
-ollama = ">=0.5.3,<0.6.0"
 psycopg = { version = ">=3.1,<4.0", extras = ["binary"] }
 pydantic-settings = ">=2.4.0,<3.0.0"
 sqlalchemy = ">=2.0.29,<3.0.0"
