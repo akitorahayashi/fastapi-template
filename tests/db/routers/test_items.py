@@ -1,4 +1,4 @@
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 from sqlalchemy.orm import Session
 
 from src.api.v1.schemas.item_schema import ItemCreate
@@ -29,9 +29,9 @@ def test_get_items(db: Session):
     assert len(items) >= 2
 
 
-def test_item_api_endpoints(client: TestClient):
+async def test_item_api_endpoints(client: AsyncClient):
     # Create an item
-    response = client.post(
+    response = await client.post(
         "/api/v1/items/", json={"name": "API Item", "description": "API Description"}
     )
     assert response.status_code == 201
@@ -40,17 +40,17 @@ def test_item_api_endpoints(client: TestClient):
     assert data["name"] == "API Item"
 
     # Get the item
-    response = client.get(f"/api/v1/items/{item_id}")
+    response = await client.get(f"/api/v1/items/{item_id}")
     assert response.status_code == 200
     assert response.json()["name"] == "API Item"
 
     # Get all items
-    response = client.get("/api/v1/items/")
+    response = await client.get("/api/v1/items/")
     assert response.status_code == 200
     assert len(response.json()) > 0
 
     # Update the item
-    response = client.put(
+    response = await client.put(
         f"/api/v1/items/{item_id}",
         json={"name": "Updated API Item", "description": "Updated Description"},
     )
@@ -58,10 +58,10 @@ def test_item_api_endpoints(client: TestClient):
     assert response.json()["name"] == "Updated API Item"
 
     # Delete the item
-    response = client.delete(f"/api/v1/items/{item_id}")
+    response = await client.delete(f"/api/v1/items/{item_id}")
     assert response.status_code == 200
     assert response.json()["name"] == "Updated API Item"
 
     # Verify deletion
-    response = client.get(f"/api/v1/items/{item_id}")
+    response = await client.get(f"/api/v1/items/{item_id}")
     assert response.status_code == 404
