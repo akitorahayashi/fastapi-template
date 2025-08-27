@@ -8,7 +8,7 @@ def test_db_connection():
         connection_url = postgres.get_connection_url()
         # Convert testcontainers URL format to psycopg format
         psycopg_url = connection_url.replace("postgresql+psycopg2://", "postgresql://")
-        
+
         with psycopg.connect(psycopg_url) as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT 1")
@@ -22,7 +22,7 @@ def test_db_version():
         connection_url = postgres.get_connection_url()
         # Convert testcontainers URL format to psycopg format
         psycopg_url = connection_url.replace("postgresql+psycopg2://", "postgresql://")
-        
+
         with psycopg.connect(psycopg_url) as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT version()")

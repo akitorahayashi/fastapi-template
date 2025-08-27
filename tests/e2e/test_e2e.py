@@ -1,4 +1,5 @@
 import time
+
 import httpx
 from testcontainers.compose import DockerCompose
 
@@ -8,11 +9,11 @@ def test_e2e_hello_world():
     with DockerCompose(".", compose_file_name="docker-compose.yml") as compose:
         # Wait for services to be ready
         time.sleep(10)
-        
+
         # Get the exposed port for the API service
         api_port = compose.get_service_port("api", 8000)
         base_url = f"http://localhost:{api_port}"
-        
+
         with httpx.Client(base_url=base_url) as client:
             response = client.get("/")
             assert response.status_code == 200
@@ -24,11 +25,11 @@ def test_e2e_health_check():
     with DockerCompose(".", compose_file_name="docker-compose.yml") as compose:
         # Wait for services to be ready
         time.sleep(10)
-        
+
         # Get the exposed port for the API service
         api_port = compose.get_service_port("api", 8000)
         base_url = f"http://localhost:{api_port}"
-        
+
         with httpx.Client(base_url=base_url) as client:
             response = client.get("/health")
             assert response.status_code == 200
