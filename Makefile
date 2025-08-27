@@ -151,25 +151,28 @@ lint: ## Check code format with Black and lint with Ruff (without fixes)
 build-test: ## Build Docker image and run smoke tests in clean environment
 	@echo "Building Docker image and running smoke tests..."
 	@ln -sf .env.test .env
-	@$(DOCKER_CMD) build --target runner -t $(TEST_PROJECT_NAME):test . || (echo "Docker build failed"; exit 1)
+	@$(DOCKER_CMD) build --target builder -t $(TEST_PROJECT_NAME):test . || (echo "Docker build failed"; exit 1)
 	@echo "Running smoke tests in Docker container..."
 	@$(DOCKER_CMD) run --rm \
-		-v $(CURDIR):/workspace \
-		-w /workspace \
 		--env-file .env.test \
+		-v $(CURDIR)/tests:/app/tests \
+		-v $(CURDIR)/src:/app/src \
+		-v $(CURDIR)/pyproject.toml:/app/pyproject.toml \
 		$(TEST_PROJECT_NAME):test \
-		sh -c "poetry install --no-root && poetry run python -m pytest tests/unit/" || (echo "Smoke tests failed"; exit 1)
+		sh -c "poetry run python -m pytest tests/unit/" || (echo "Smoke tests failed"; exit 1)
 	@echo "Cleaning up test image..."
 	@$(DOCKER_CMD) rmi $(TEST_PROJECT_NAME):test || true
 
 .PHONY: unit-test
 unit-test: ## Run the fast, database-independent unit tests locally
 	@echo "Running unit tests..."
+	@ln -sf .env.test .env
 	@poetry run python -m pytest tests/unit
 
 .PHONY: db-test
 db-test: ## Run the slower, database-dependent tests locally
 	@echo "Running database tests..."
+	@ln -sf .env.test .env
 	@poetry run python -m pytest tests/db
 
 .PHONY: e2e-test
@@ -179,4 +182,4 @@ e2e-test: ## Run end-to-end tests against a live application stack
 	@poetry run python -m pytest tests/e2e
 
 .PHONY: test
-test: unit-test db-test e2e-test ## Run the full test suite
+test: unit-test build-test db-test e2e-test ## Run the full test suite

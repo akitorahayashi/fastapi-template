@@ -22,7 +22,6 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 
-
 # Install Poetry
 RUN --mount=type=cache,target=/root/.cache \
   pip install pipx && \
