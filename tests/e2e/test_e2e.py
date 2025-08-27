@@ -1,4 +1,5 @@
 import time
+
 import httpx
 import pytest
 from testcontainers.compose import DockerCompose
@@ -23,7 +24,9 @@ def _wait_for_health_check(compose: DockerCompose):
             with httpx.Client(base_url=base_url) as client:
                 response = client.get("/health")
                 if response.status_code == 200 and response.json() == {"status": "ok"}:
-                    print(f"API service is healthy after {time.time() - start_time:.2f}s.")
+                    print(
+                        f"API service is healthy after {time.time() - start_time:.2f}s."
+                    )
                     return
         except httpx.ConnectError:
             # Service is not yet ready, wait and retry
@@ -33,12 +36,14 @@ def _wait_for_health_check(compose: DockerCompose):
     # If the loop completes, the health check has timed out
     logs = compose.get_logs()
     print("API service health check timed out.")
-    print("="*80)
+    print("=" * 80)
     for service, log in logs.items():
         print(f"Logs for {service}:")
-        print(log.decode('utf-8'))
+        print(log.decode("utf-8"))
         print("-" * 80)
-    pytest.fail(f"API service did not become healthy within {HEALTHCHECK_TIMEOUT} seconds.")
+    pytest.fail(
+        f"API service did not become healthy within {HEALTHCHECK_TIMEOUT} seconds."
+    )
 
 
 @pytest.fixture(scope="module")
