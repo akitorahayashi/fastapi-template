@@ -1,3 +1,4 @@
+# FORCED UPDATE
 # ==============================================================================
 # Makefile for Project Automation
 #
@@ -53,14 +54,10 @@ setup: ## Initialize project: install dependencies, create .env files and pull r
 	@echo "Installing python dependencies with Poetry..."
 	@poetry install --no-root
 	@echo "Creating environment files..."
-	@if [ ! -f .env.example ]; then echo ".env.example not found!"; exit 1; fi
-	@POSTGRES_DB_NAME=$$(grep POSTGRES_DB_NAME .env.example | cut -d '=' -f2); \
-	for env in dev prod test; do \
+	@for env in dev prod test; do \
 		if [ ! -f .env.$${env} ]; then \
-			echo "Creating .env.$${env}..." ; \
+			echo "Creating .env.$${env} from .env.example..." ; \
 			cp .env.example .env.$${env}; \
-			echo "\n# --- Dynamic settings ---" >> .env.$${env}; \
-			echo "POSTGRES_DB=$${POSTGRES_DB_NAME}-$${env}" >> .env.$${env}; \
 		else \
 			echo ".env.$${env} already exists. Skipping creation."; \
 		fi; \

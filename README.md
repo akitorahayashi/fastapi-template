@@ -1,131 +1,87 @@
 # FastAPI Template
 
-A production-ready FastAPI template with modern development tooling, comprehensive testing, and Docker containerization.
+A production-ready FastAPI template designed with robust best practices for environment management and developer experience, inspired by the `olm-api` project.
+
+## Core Philosophy
+
+This template enforces a strict separation of configuration between environments, ensuring consistency and simplifying the development workflow. It leverages `docker-compose.override.yml` for development-specific settings and symbolic links for clean environment switching.
 
 ## Features
 
-- **FastAPI** - Modern, fast web framework for building APIs
-- **Docker** - Containerized development and deployment
-- **Poetry** - Dependency management
-- **Pytest** - Comprehensive testing with testcontainers
-- **Code Quality** - Black (formatter) + Ruff (linter)
-- **Database** - PostgreSQL with Alembic migrations
-- **Makefile** - Unified development commands
+- **FastAPI**: High-performance Python web framework.
+- **Docker & Docker Compose**: Containerized development and production parity.
+- **Symbolic Link Env Management**: Clean, automated switching between `.env.dev`, `.env.test`, and `.env.prod`.
+- **Poetry**: Modern Python dependency management.
+- **Pytest**: Comprehensive testing suite.
+- **Alembic**: Database schema migrations.
+- **Code Quality**: Pre-configured with `black` and `ruff`.
+- **CI/CD**: GitHub Actions workflow ready for testing.
 
 ## Quick Start
 
-### 1. Setup Environment
+### 1. Initial Setup
+
+First, clone the repository. Then, run the setup command:
 
 ```bash
 make setup
 ```
 
-This creates `.env.dev`, `.env.prod`, and `.env.test` files from `.env.example`.
+This command performs the following actions:
+- Installs Python dependencies using Poetry.
+- Creates `.env.dev`, `.env.prod`, and `.env.test` from `.env.example` if they don't exist.
 
-### 2. Start Development Server
+### 2. Start the Development Server
+
+To start the services, run:
 
 ```bash
 make up
 ```
 
-The API will be available at `http://127.0.0.1:50100` (configurable in `.env.dev`).
+This command will:
+1.  Create a symbolic link from `.env.dev` to `.env`.
+2.  Start the `api` and `db` services using `docker-compose.yml` and `docker-compose.override.yml`.
 
-### 3. Run Tests
+The API will be available at `http://127.0.0.1:50000` (configurable in `.env.dev`). The `docker-compose.override.yml` keeps the container running with `tail -f /dev/null`, allowing you to attach a shell and run commands manually.
+
+### 3. Running Tests
+
+To run the full test suite:
 
 ```bash
 make test
 ```
 
-Runs unit, database, and end-to-end tests using testcontainers for full isolation.
+This command uses `.env.test` to configure the testing environment.
 
-## API Endpoints
+## Environment Variable Management
 
-- `GET /` - Hello World
-- `GET /health` - Health check
+This project uses a symbolic link (`.env`) to manage environment-specific configurations.
 
-## Development Commands
+- **`.env.example`**: A template for production environment variables. **Do not** add development or test-specific variables here.
+- **`.env.prod`**: Production configuration. Created from `.env.example` on `make setup`.
+- **`.env.dev`**: Development configuration. Created from `.env.example` on `make setup`. You should customize this file for your local setup.
+- **`.env.test`**: Testing configuration. Created from `.env.example` on `make setup`.
 
-| Command | Description |
-|---------|-------------|
-| `make setup` | Initialize environment files |
-| `make up` | Start development containers |
-| `make down` | Stop development containers |
-| `make test` | Run all tests |
-| `make unit-test` | Run unit tests only |
-| `make db-test` | Run database tests only |
-| `make e2e-test` | Run end-to-end tests only |
-| `make format` | Format code with Black and fix with Ruff |
-| `make lint` | Check code format and lint |
-| `make shell` | Open shell in API container |
-| `make logs` | View API container logs |
-| `make migrate` | Run database migrations |
-| `make migration m="msg"` | Generate a new database migration |
+The `make` commands (e.g., `make up`, `make test`) automatically create a symlink from the appropriate file (e.g., `.env.dev`) to `.env`. Docker Compose then automatically picks up the `.env` file. This approach avoids duplicating variables and keeps the environment configuration clean and explicit.
 
-## Project Structure
+## Development Workflow
 
-```
-src/
-├── api/v1/           # API version 1
-├── config/           # Configuration
-├── db/               # Database models
-├── middlewares/      # Custom middleware
-└── main.py          # FastAPI application
+| Command | Description | .env Used |
+|---------------|--------------------------------------------------|-----------|
+| `make setup` | Initialize the project and create `.env.*` files. | N/A |
+| `make up` | Start development containers. | `.env.dev`|
+| `make down` | Stop development containers. | `.env.dev`|
+| `make logs` | View logs for the development API service. | `.env.dev`|
+| `make shell` | Open a shell in the running API container. | `.env.dev`|
+| `make migrate` | Run database migrations. | `.env.dev`|
+| `make test` | Run the complete test suite. | `.env.test`|
+| `make up-prod` | Start production-like containers. | `.env.prod`|
+| `make down-prod`| Stop production-like containers. | `.env.prod`|
+| `make format` | Format code with Black and Ruff. | N/A |
+| `make lint` | Lint code with Black and Ruff. | N/A |
 
-tests/
-├── unit/            # Unit tests (TestClient)
-├── db/              # Database tests (testcontainers)
-└── e2e/             # End-to-end tests (testcontainers + HTTP)
+## CI/CD Pipeline
 
-alembic/             # Database migrations
-```
-
-## Environment Variables
-
-Configure in `.env.dev`, `.env.prod`, and `.env.test`:
-
-- `HOST_BIND_IP` - IP to bind (default: 127.0.0.1)
-- `HOST_PORT` - Port to bind (default: 50100)
-- `DATABASE_URL` - PostgreSQL connection string
-
-## Testing
-
-The project includes three types of tests:
-
-- **Unit Tests**: Fast tests using FastAPI TestClient
-- **Database Tests**: PostgreSQL integration tests using testcontainers
-- **E2E Tests**: Full stack tests using Docker Compose via testcontainers
-
-All tests run independently without external dependencies.
-
-## Deployment
-
-### Production
-
-```bash
-make up-prod
-```
-
-Uses production environment configuration from `.env.prod`.
-
-### Docker Build
-
-The Dockerfile includes multi-stage builds:
-- `builder` - Full development environment
-- `prod-builder` - Production dependencies only
-- `runner` - Minimal production runtime
-
-## Adding Database Models
-
-1. Create models in `src/db/models/`
-2. Generate migration: `alembic revision --autogenerate -m "description"`
-3. Apply migration: `alembic upgrade head`
-
-Database migrations run automatically in Docker containers.
-
-## Code Quality
-
-- **Black**: Code formatting
-- **Ruff**: Fast Python linter
-- **Pytest**: Testing framework with testcontainers
-
-Run `make format` and `make lint` before committing.
+The `.github/workflows/run-tests.yml` workflow automatically runs the test suite on every push and pull request to the `main` branch. It uses default values for environment variables, ensuring that tests can run in forked repositories where secrets are not available.

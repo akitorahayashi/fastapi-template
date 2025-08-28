@@ -1,36 +1,40 @@
 name: Run Tests
 
 on:
-  workflow_call:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        test_target: [unit-test, db-test, build-test, e2e-test]
-      fail-fast: false
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version-file: '.python-version'
+          python-version: '3.11'
 
       - name: Install Poetry
-        run: pipx install poetry
-
-      - name: Configure Poetry
-        run: |
-          poetry config virtualenvs.in-project true
-          poetry config virtualenvs.create true
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        uses: snok/install-poetry@v1
 
       - name: Install dependencies
-        run: make setup
+        run: poetry install --no-root
+
+      - name: Create .env.test file
+        run: |
+          echo "HOST_BIND_IP=${{ secrets.HOST_BIND_IP || '127.0.0.1' }}" >> .env.test
+          echo "HOST_PORT=${{ secrets.HOST_PORT || '50001' }}" >> .env.test
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL_TEST || 'postgresql+psycopg://user:password@localhost:5432/test-db' }}" >> .env.test
+          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER || 'user' }}" >> .env.test
+          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD || 'password' }}" >> .env.test
+          echo "POSTGRES_DB_NAME=${{ secrets.POSTGRES_DB_NAME_TEST || 'test-db' }}" >> .env.test
 
       - name: Run tests
-        run: make ${{ matrix.test_target }}
+        run: make test SUDO=true
