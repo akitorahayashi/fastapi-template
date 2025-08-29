@@ -53,9 +53,7 @@ def e2e_setup() -> Generator[None, None, None]:
     ]
 
     try:
-        subprocess.run(
-            compose_up_command, check=True, timeout=300
-        )  # 5 minutes timeout
+        subprocess.run(compose_up_command, check=True, timeout=300)  # 5 minutes timeout
 
         # Health Check
         start_time = time.time()
@@ -69,7 +67,9 @@ def e2e_setup() -> Generator[None, None, None]:
                     is_healthy = True
                     break
             except httpx.RequestError as e:
-                print(f"⏳ API not yet healthy, retrying... URL: {health_url}, Error: {e}")
+                print(
+                    f"⏳ API not yet healthy, retrying... URL: {health_url}, Error: {e}"
+                )
             time.sleep(5)
 
         if not is_healthy:

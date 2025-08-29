@@ -1,10 +1,10 @@
 import os
 import subprocess
 import time
-from typing import AsyncGenerator, Generator
-from dotenv import load_dotenv
+from typing import AsyncGenerator, Generator, Optional
 
 import pytest
+from dotenv import load_dotenv
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
@@ -85,14 +85,14 @@ def db_setup(
             postgres_host = os.getenv("POSTGRES_HOST", "localhost")
             postgres_port = os.getenv("POSTGRES_PORT", "5432")
             postgres_db = os.getenv("POSTGRES_TEST_DB_NAME", "tmpl-api-test")
-            
+
             db_url_value = f"postgresql+psycopg://{postgres_user}:{postgres_password}@{postgres_host}:{postgres_port}/{postgres_db}"
             os.environ["DATABASE_URL"] = db_url_value
             print(f"✅ PostgreSQL container started: {db_url_value}")
 
             # Wait for DB to be ready
             time.sleep(5)
-            
+
             print("🔄 Running database migrations...")
             alembic_cfg = Config()
             alembic_cfg.set_main_option("script_location", "alembic")
@@ -103,7 +103,7 @@ def db_setup(
             if db_conn_file:
                 db_conn_file.write_text(db_url_value)
 
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             print("\n🛑 compose up failed; performing cleanup...")
             subprocess.run(compose_down_command, check=False)
             raise
@@ -130,7 +130,7 @@ def db_setup(
         # Determine if sudo should be used based on environment variable
         use_sudo = os.getenv("SUDO") == "true"
         docker_command = ["sudo", "docker"] if use_sudo else ["docker"]
-        
+
         compose_down_command = docker_command + [
             "compose",
             "-f",
@@ -142,7 +142,7 @@ def db_setup(
             "down",
             "--remove-orphans",
         ]
-        
+
         print("\n🛑 Stopping PostgreSQL test container...")
         subprocess.run(compose_down_command, check=False)
         if db_conn_file and db_conn_file.exists():
