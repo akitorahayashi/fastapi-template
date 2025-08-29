@@ -1,30 +1,22 @@
-import psycopg
-from testcontainers.postgres import PostgresContainer
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 
-def test_db_connection():
-    """Smoke test for PostgreSQL database connection."""
-    with PostgresContainer("postgres:16-alpine") as postgres:
-        connection_url = postgres.get_connection_url()
-        # Convert testcontainers URL format to psycopg format
-        psycopg_url = connection_url.replace("postgresql+psycopg2://", "postgresql://")
-
-        with psycopg.connect(psycopg_url) as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT 1")
-                result = cur.fetchone()
-                assert result[0] == 1
+def test_db_connection(db_session: Session):
+    """Smoke test for database connection using conftest fixture."""
+    result = db_session.execute(text("SELECT 1")).fetchone()
+    assert result[0] == 1
 
 
-def test_db_version():
-    """Smoke test to check PostgreSQL version."""
-    with PostgresContainer("postgres:16-alpine") as postgres:
-        connection_url = postgres.get_connection_url()
-        # Convert testcontainers URL format to psycopg format
-        psycopg_url = connection_url.replace("postgresql+psycopg2://", "postgresql://")
+def test_db_version(db_session: Session):
+    """Smoke test to check PostgreSQL version using conftest fixture."""
+    result = db_session.execute(text("SELECT version()")).fetchone()
+    version = result[0]
+    assert "PostgreSQL" in version
 
-        with psycopg.connect(psycopg_url) as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT version()")
-                version = cur.fetchone()[0]
-                assert "PostgreSQL" in version
+
+async def test_api_health_check(client):
+    """Test API health check endpoint with database connection."""
+    response = await client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}

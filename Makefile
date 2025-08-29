@@ -49,24 +49,24 @@ help: ## Show this help message
 # ==============================================================================
 
 .PHONY: setup
-setup: ## Initialize project: install dependencies, create .env files and pull required Docker images.
+setup: ## Initialize project: install dependencies, create .env file and pull required Docker images
 	@echo "Installing python dependencies with Poetry..."
 	@poetry install --no-root
-	@echo "Creating environment files..."
-	@if [ ! -f .env.example ]; then echo ".env.example not found!"; exit 1; fi
-	@POSTGRES_DB_NAME=$$(grep POSTGRES_DB_NAME .env.example | cut -d '=' -f2); \
-	for env in dev prod test; do \
-		if [ ! -f .env.$${env} ]; then \
-			echo "Creating .env.$${env}..." ; \
-			cp .env.example .env.$${env}; \
-			echo "\n# --- Dynamic settings ---" >> .env.$${env}; \
-			echo "POSTGRES_DB=$${POSTGRES_DB_NAME}-$${env}" >> .env.$${env}; \
-		else \
-			echo ".env.$${env} already exists. Skipping creation."; \
-		fi; \
-	done
-	@echo "Pulling PostgreSQL image for tests..."
-	$(DOCKER_CMD) pull postgres:16-alpine
+	@echo "Creating environment file..."
+	@if [ ! -f .env ]; then \
+		echo "Creating .env from .env.example..." ; \
+		cp .env.example .env; \
+	else \
+		echo ".env already exists. Skipping creation."; \
+	fi
+	@echo "✅ Environment file created (.env)"
+	@echo "💡 You can customize .env for your specific needs:"
+	@echo "   📝 Change OLLAMA_HOST to switch between container/host Ollama"
+	@echo "   📝 Adjust other settings as needed"
+	@echo ""
+	@echo "Pulling PostgreSQL image..."
+	@POSTGRES_IMAGE=$$(grep POSTGRES_IMAGE .env 2>/dev/null | cut -d '=' -f2 || echo "postgres:16-alpine"); \
+	$(DOCKER_CMD) pull $$POSTGRES_IMAGE
 
 # ==============================================================================
 # Development Environment Commands
@@ -75,121 +75,112 @@ setup: ## Initialize project: install dependencies, create .env files and pull r
 .PHONY: up
 up: ## Start all development containers in detached mode
 	@echo "Starting up development services..."
-	@ln -sf .env.dev .env
-	COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) up -d
+	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.dev.override.yml --project-name $(DEV_PROJECT_NAME) up -d
 
 .PHONY: down
 down: ## Stop and remove all development containers
 	@echo "Shutting down development services..."
-	@ln -sf .env.dev .env
-	COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) down --remove-orphans
-
-.PHONY: clean
-clean: ## Stop and remove all dev containers, networks, and volumes (use with CONFIRM=1)
-	@if [ "$(CONFIRM)" != "1" ]; then echo "This is a destructive operation. Please run 'make clean CONFIRM=1' to confirm."; exit 1; fi
-	@echo "Cleaning up all development Docker resources (including volumes)..."
-	@ln -sf .env.dev .env
-	COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) down --volumes --remove-orphans
+	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.dev.override.yml --project-name $(DEV_PROJECT_NAME) down --remove-orphans
 
 .PHONY: rebuild
 rebuild: ## Rebuild the api service without cache and restart it
 	@echo "Rebuilding api service with --no-cache..."
-	@ln -sf .env.dev .env
-	COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) build --no-cache api
-	COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) up -d api
+	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.dev.override.yml --project-name $(DEV_PROJECT_NAME) build --no-cache api
+	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.dev.override.yml --project-name $(DEV_PROJECT_NAME) up -d api
 
 .PHONY: up-prod
 up-prod: ## Start all production-like containers
 	@echo "Starting up production-like services..."
-	@ln -sf .env.prod .env
-	COMPOSE_PROJECT_NAME=$(PROD_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml --project-name $(PROD_PROJECT_NAME) up -d --build --pull always --remove-orphans
+	$(DOCKER_CMD) compose -f docker-compose.yml --project-name $(PROD_PROJECT_NAME) up -d --build --pull always --remove-orphans
 
 .PHONY: down-prod
 down-prod: ## Stop and remove all production-like containers
 	@echo "Shutting down production-like services..."
-	@ln -sf .env.prod .env
-	COMPOSE_PROJECT_NAME=$(PROD_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml --project-name $(PROD_PROJECT_NAME) down --remove-orphans
+	$(DOCKER_CMD) compose -f docker-compose.yml --project-name $(PROD_PROJECT_NAME) down --remove-orphans
 
 .PHONY: logs
 logs: ## View the logs for the development API service
 	@echo "Following logs for the dev api service..."
-	@ln -sf .env.dev .env
-	COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) logs -f api
+	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.dev.override.yml --project-name $(DEV_PROJECT_NAME) logs -f api
 
 .PHONY: shell
 shell: ## Open a shell inside the running development API container
 	@echo "Opening shell in dev api container..."
-	@ln -sf .env.dev .env
-	@COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) exec api /bin/sh || \
+	@$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.dev.override.yml --project-name $(DEV_PROJECT_NAME) exec api /bin/sh || \
 		(echo "Failed to open shell. Is the container running? Try 'make up'" && exit 1)
 
 .PHONY: migrate
 migrate: ## Run database migrations against the development database
 	@echo "Running database migrations for dev environment..."
-	@ln -sf .env.dev .env
-	COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) exec api sh -c ". /app/.venv/bin/activate && alembic upgrade head"
+	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.dev.override.yml --project-name $(DEV_PROJECT_NAME) exec api sh -c ". /app/.venv/bin/activate && alembic upgrade head"
 
 .PHONY: migration
-migration: ## Generate a new database migration file (e.g., make migration m="add user table")
+migration: ## Generate a new database migration file. Usage: make migration m="Your migration message"
 	@if [ -z "$(m)" ]; then \
-		echo "Migration message is required. Usage: make migration m=\"your message\""; \
+		echo "  \033[31mError: Migration message is required.\033[0m"; \
+		echo "  Usage: make migration m=\"Your migration message\""; \
 		exit 1; \
 	fi
-	@echo "Generating new migration with message: $(m)..."
-	@ln -sf .env.dev .env
-	COMPOSE_PROJECT_NAME=$(DEV_PROJECT_NAME) $(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.override.yml --project-name $(DEV_PROJECT_NAME) exec api sh -c ". /app/.venv/bin/activate && alembic revision --autogenerate -m \"$(m)\""
+	@echo "Generating new migration for dev environment with message: $(m)..."
+	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.dev.override.yml --project-name $(DEV_PROJECT_NAME) exec api sh -c ". /app/.venv/bin/activate && alembic revision --autogenerate -m \"$(m)\""
 
 # ==============================================================================
-# CODE QUALITY & TESTING
+# CODE QUALITY 
 # ==============================================================================
 
 .PHONY: format
-format: ## Format code with Black and fix issues with Ruff
-	@echo "Formatting code with Black..."
-	@poetry run black src/ tests/
-	@echo "Fixing code issues with Ruff..."
-	@poetry run ruff check src/ tests/ --fix
+format: ## Format code with black and ruff --fix
+	@echo "Formatting code with black and ruff..."
+	poetry run black .
+	poetry run ruff check . --fix
 
 .PHONY: lint
-lint: ## Check code format with Black and lint with Ruff (without fixes)
-	@echo "Checking code format with Black..."
-	@poetry run black --check src/ tests/
-	@echo "Checking code with Ruff..."
-	@poetry run ruff check src/ tests/
+lint: ## Lint code with black check and ruff
+	@echo "Linting code with black check and ruff..."
+	poetry run black --check .
+	poetry run ruff check .
 
-.PHONY: build-test
-build-test: ## Build Docker image and run smoke tests in clean environment
-	@echo "Building Docker image and running smoke tests..."
-	@ln -sf .env.test .env
-	@$(DOCKER_CMD) build --target builder -t $(TEST_PROJECT_NAME):test . || (echo "Docker build failed"; exit 1)
-	@echo "Running smoke tests in Docker container..."
-	@$(DOCKER_CMD) run --rm \
-		--env-file .env.test \
-		-v $(CURDIR)/tests:/app/tests \
-		-v $(CURDIR)/src:/app/src \
-		-v $(CURDIR)/pyproject.toml:/app/pyproject.toml \
-		$(TEST_PROJECT_NAME):test \
-		sh -c "poetry run python -m pytest tests/unit/" || (echo "Smoke tests failed"; exit 1)
-	@echo "Cleaning up test image..."
-	@$(DOCKER_CMD) rmi $(TEST_PROJECT_NAME):test || true
+# ==============================================================================
+# TESTING
+# ==============================================================================
+
+.PHONY: test
+test: unit-test build-test db-test e2e-test ## Run the full test suite
 
 .PHONY: unit-test
 unit-test: ## Run the fast, database-independent unit tests locally
 	@echo "Running unit tests..."
-	@ln -sf .env.test .env
-	@poetry run python -m pytest tests/unit
+	@poetry run python -m pytest tests/unit -s
 
 .PHONY: db-test
 db-test: ## Run the slower, database-dependent tests locally
 	@echo "Running database tests..."
-	@ln -sf .env.test .env
-	@poetry run python -m pytest tests/db
+	@poetry run python -m pytest tests/db -s
 
 .PHONY: e2e-test
 e2e-test: ## Run end-to-end tests against a live application stack
 	@echo "Running end-to-end tests..."
-	@ln -sf .env.test .env
-	@poetry run python -m pytest tests/e2e
+	@poetry run python -m pytest tests/e2e -s
 
-.PHONY: test
-test: unit-test build-test db-test e2e-test ## Run the full test suite
+.PHONY: perf-test
+perf-test: ## Run all performance tests (both parallel and sequential)
+	@echo "Running all performance tests..."
+	@poetry run python -m pytest tests/perf -s
+
+.PHONY: perf-parallel
+perf-parallel: ## Run parallel performance tests (simultaneous requests)
+	@echo "Running parallel performance tests..."
+	@poetry run python -m pytest tests/perf/test_parallel.py -s
+
+.PHONY: perf-sequential
+perf-sequential: ## Run sequential performance tests (interval-based requests)
+	@echo "Running sequential performance tests..."
+	@poetry run python -m pytest tests/perf/test_sequential.py -s
+
+.PHONY: build-test
+build-test: ## Build Docker image for testing without leaving artifacts
+	@echo "Building Docker image for testing (clean build)..."
+	@TEMP_IMAGE_TAG=$$(date +%s)-build-test; \
+	$(DOCKER_CMD) build --target production --tag temp-build-test:$$TEMP_IMAGE_TAG . && \
+	echo "Build successful. Cleaning up temporary image..." && \
+	$(DOCKER_CMD) rmi temp-build-test:$$TEMP_IMAGE_TAG || true
