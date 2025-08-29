@@ -10,6 +10,7 @@ if config.config_file_name is not None:
 
 target_metadata = None
 
+
 def run_migrations_online() -> None:
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
@@ -22,6 +23,7 @@ def run_migrations_online() -> None:
 
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     pass  # Offline mode not implemented
