@@ -194,6 +194,6 @@ Run `make format` and `make lint` before committing.
 
 Project volumes are prefixed with `PROJECT_NAME` to avoid conflicts:
 
-- `${PROJECT_NAME}-postgres-data`: PostgreSQL data persistence
+- `${PROJECT_NAME}-postgres-db-prod`: PostgreSQL data persistence
 - Volumes are marked as `external: false` for proper cleanup
 - Each environment (dev/prod/test) uses separate Docker Compose project names
