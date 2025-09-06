@@ -6,7 +6,7 @@ A production-ready FastAPI template with modern development tooling, comprehensi
 
 - **FastAPI** - Modern, fast web framework for building APIs
 - **Docker** - Containerized development and deployment
-- **Poetry** - Dependency management
+- **uv** - Ultra-fast Python package installer and resolver
 - **Pytest** - Comprehensive testing with testcontainers
 - **Code Quality** - Black (formatter) + Ruff (linter)
 - **Database** - PostgreSQL with Alembic migrations
@@ -20,7 +20,7 @@ A production-ready FastAPI template with modern development tooling, comprehensi
 make setup
 ```
 
-This creates `.env.dev`, `.env.prod`, and `.env.test` files from `.env.example`.
+This installs dependencies with uv and creates `.env` file from `.env.example`.
 
 ### 2. Start Development Server
 
@@ -28,7 +28,7 @@ This creates `.env.dev`, `.env.prod`, and `.env.test` files from `.env.example`.
 make up
 ```
 
-The API will be available at `http://127.0.0.1:50100` (configurable in `.env.dev`).
+The API will be available at `http://127.0.0.1:8000` (configurable in `.env`).
 
 ### 3. Run Tests
 
@@ -81,11 +81,18 @@ alembic/             # Database migrations
 
 ## Environment Variables
 
-Configure in `.env.dev`, `.env.prod`, and `.env.test`:
+Configure in `.env`:
 
+- `PROJECT_NAME` - Project name for Docker volumes (default: fastapi-tmpl)
 - `HOST_BIND_IP` - IP to bind (default: 127.0.0.1)
-- `HOST_PORT` - Port to bind (default: 50100)
-- `DATABASE_URL` - PostgreSQL connection string
+- `HOST_PORT` - Port to bind (default: 8000)
+- `DEV_PORT` - Development port (default: 8001)
+- `TEST_PORT` - Test port (default: 8002)
+- `POSTGRES_USER` - PostgreSQL username
+- `POSTGRES_PASSWORD` - PostgreSQL password
+- `POSTGRES_HOST_DB_NAME` - Production database name
+- `POSTGRES_DEV_DB_NAME` - Development database name
+- `POSTGRES_TEST_DB_NAME` - Test database name
 
 ## Testing
 
@@ -105,14 +112,66 @@ All tests run independently without external dependencies.
 make up-prod
 ```
 
-Uses production environment configuration from `.env.prod`.
+Uses production environment configuration from `.env`.
 
-### Docker Build
+## Docker Architecture
 
-The Dockerfile includes multi-stage builds:
-- `builder` - Full development environment
-- `prod-builder` - Production dependencies only
-- `runner` - Minimal production runtime
+The project uses a sophisticated 5-stage multi-stage Docker build optimized for uv:
+
+### Build Stages
+
+1. **`base`** - Foundation stage with uv installation and dependency files
+   - Installs uv package manager
+   - Copies `pyproject.toml`, `uv.lock`, and `README.md`
+   - Shared base for dependency installation stages
+
+2. **`dev-deps`** - Development dependencies
+   - Extends base stage
+   - Installs system tools (curl for debugging)
+   - Runs `uv sync` to install all dependencies including dev dependencies
+   - Creates complete virtual environment for development and testing
+
+3. **`prod-deps`** - Production dependencies only
+   - Extends base stage  
+   - Runs `uv sync --no-dev` to install only production dependencies
+   - Creates lean virtual environment for production
+
+4. **`development`** - Development runtime environment
+   - Based on fresh Python 3.12 slim image
+   - Installs PostgreSQL client and development tools
+   - Creates non-root user for security
+   - Copies virtual environment from `dev-deps` stage
+   - Includes all application code and development utilities
+   - Suitable for local development and CI/CD testing
+
+5. **`production`** - Production runtime environment  
+   - Based on fresh Python 3.12 slim image
+   - Minimal system dependencies (PostgreSQL client only)
+   - Creates non-root user for security
+   - Copies lean virtual environment from `prod-deps` stage
+   - Includes only necessary application code
+   - Optimized for production deployment
+
+### Key Benefits
+
+- **Fast Builds**: uv's speed combined with Docker layer caching
+- **Security**: Non-root user execution in runtime stages
+- **Optimization**: Separate dev/prod dependency trees
+- **Caching**: Aggressive use of Docker build cache for dependencies
+- **Minimal Attack Surface**: Production image contains only essential components
+
+### Build Targets
+
+```bash
+# Build development image
+docker build --target development -t myapp:dev .
+
+# Build production image  
+docker build --target production -t myapp:prod .
+
+# Test build (validates production build without keeping image)
+make build-test
+```
 
 ## Adding Database Models
 
@@ -126,6 +185,15 @@ Database migrations run automatically in Docker containers.
 
 - **Black**: Code formatting
 - **Ruff**: Fast Python linter
+- **uv**: Ultra-fast dependency management
 - **Pytest**: Testing framework with testcontainers
 
 Run `make format` and `make lint` before committing.
+
+## Volume Management
+
+Project volumes are prefixed with `PROJECT_NAME` to avoid conflicts:
+
+- `${PROJECT_NAME}-postgres-data`: PostgreSQL data persistence
+- Volumes are marked as `external: false` for proper cleanup
+- Each environment (dev/prod/test) uses separate Docker Compose project names
