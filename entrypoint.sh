@@ -4,11 +4,6 @@
 # or if an unset variable is used ('u').
 set -eu
 
-# Activate the virtual environment if it exists
-if [ -f "/app/.venv/bin/activate" ]; then
-    . /app/.venv/bin/activate
-fi
-
 # --- Wait for DB and run migrations ---
 # This section is skipped if the command is not the default uvicorn server
 # (e.g., if a user runs 'shell' or another command).
@@ -43,11 +38,12 @@ fi
 if [ "$#" -gt 0 ]; then
     exec "$@"
 else
-    WORKERS=${NUM_OF_UVICORN_WORKERS:-1}
+    WORKERS=${NUM_OF_UVICORN_WORKERS:-4}
     echo "Starting server on 0.0.0.0:8000 with ${WORKERS} worker(s)..."
     exec uvicorn src.main:app \
         --host "0.0.0.0" \
         --port "8000" \
         --workers "${WORKERS}" \
-        --reload
+        --loop uvloop \
+        --limit-concurrency 40
 fi

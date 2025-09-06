@@ -24,8 +24,11 @@ endif
 
 DOCKER_CMD := $(SUDO_PREFIX) docker
 
-# Define the project name based on the directory name for dynamic container naming
-PROJECT_NAME := $(shell basename $(CURDIR))
+# Load environment variables from .env file
+-include .env
+
+# Define the project name from environment variable
+PROJECT_NAME ?= fastapi-tmpl
 
 # Define project names for different environments
 DEV_PROJECT_NAME := $(PROJECT_NAME)-dev
@@ -49,9 +52,9 @@ help: ## Show this help message
 # ==============================================================================
 
 .PHONY: setup
-setup: ## Initialize project: install dependencies, create .env file and pull required Docker images
-	@echo "Installing python dependencies with Poetry..."
-	@poetry install --no-root
+setup: ## Initialize project: install dependencies, create .env file and pull required Docker images.
+	@echo "Installing python dependencies with uv..."
+	@uv sync
 	@echo "Creating environment file..."
 	@if [ ! -f .env ]; then \
 		echo "Creating .env from .env.example..." ; \
@@ -64,9 +67,8 @@ setup: ## Initialize project: install dependencies, create .env file and pull re
 	@echo "   📝 Change OLLAMA_HOST to switch between container/host Ollama"
 	@echo "   📝 Adjust other settings as needed"
 	@echo ""
-	@echo "Pulling PostgreSQL image..."
-	@POSTGRES_IMAGE=$$(grep POSTGRES_IMAGE .env 2>/dev/null | cut -d '=' -f2 || echo "postgres:16-alpine"); \
-	$(DOCKER_CMD) pull $$POSTGRES_IMAGE
+	@echo "Pulling PostgreSQL image for tests..."
+	$(DOCKER_CMD) pull postgres:16-alpine
 
 # ==============================================================================
 # Development Environment Commands
@@ -81,12 +83,6 @@ up: ## Start all development containers in detached mode
 down: ## Stop and remove all development containers
 	@echo "Shutting down development services..."
 	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.dev.override.yml --project-name $(DEV_PROJECT_NAME) down --remove-orphans
-
-.PHONY: rebuild
-rebuild: ## Rebuild the api service without cache and restart it
-	@echo "Rebuilding api service with --no-cache..."
-	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.dev.override.yml --project-name $(DEV_PROJECT_NAME) build --no-cache api
-	$(DOCKER_CMD) compose -f docker-compose.yml -f docker-compose.dev.override.yml --project-name $(DEV_PROJECT_NAME) up -d api
 
 .PHONY: up-prod
 up-prod: ## Start all production-like containers
@@ -131,14 +127,14 @@ migration: ## Generate a new database migration file. Usage: make migration m="Y
 .PHONY: format
 format: ## Format code with black and ruff --fix
 	@echo "Formatting code with black and ruff..."
-	poetry run black .
-	poetry run ruff check . --fix
+	black .
+	ruff check . --fix
 
 .PHONY: lint
 lint: ## Lint code with black check and ruff
 	@echo "Linting code with black check and ruff..."
-	poetry run black --check .
-	poetry run ruff check .
+	black --check .
+	ruff check .
 
 # ==============================================================================
 # TESTING
@@ -148,39 +144,24 @@ lint: ## Lint code with black check and ruff
 test: unit-test build-test db-test e2e-test ## Run the full test suite
 
 .PHONY: unit-test
-unit-test: ## Run the fast, database-independent unit tests locally
+unit-test: ## Run the unit tests locally
 	@echo "Running unit tests..."
-	@poetry run python -m pytest tests/unit -s
+	@python -m pytest tests/unit -s
 
 .PHONY: db-test
-db-test: ## Run the slower, database-dependent tests locally
+db-test: ## Run database tests locally
 	@echo "Running database tests..."
-	@poetry run python -m pytest tests/db -s
+	@python -m pytest tests/db -s
 
 .PHONY: e2e-test
 e2e-test: ## Run end-to-end tests against a live application stack
 	@echo "Running end-to-end tests..."
-	@poetry run python -m pytest tests/e2e -s
-
-.PHONY: perf-test
-perf-test: ## Run all performance tests (both parallel and sequential)
-	@echo "Running all performance tests..."
-	@poetry run python -m pytest tests/perf -s
-
-.PHONY: perf-parallel
-perf-parallel: ## Run parallel performance tests (simultaneous requests)
-	@echo "Running parallel performance tests..."
-	@poetry run python -m pytest tests/perf/test_parallel.py -s
-
-.PHONY: perf-sequential
-perf-sequential: ## Run sequential performance tests (interval-based requests)
-	@echo "Running sequential performance tests..."
-	@poetry run python -m pytest tests/perf/test_sequential.py -s
+	@python -m pytest tests/e2e -s
 
 .PHONY: build-test
 build-test: ## Build Docker image for testing without leaving artifacts
 	@echo "Building Docker image for testing (clean build)..."
-	@TEMP_IMAGE_TAG=$$(date +%s)-build-test; \
-	$(DOCKER_CMD) build --target production --tag temp-build-test:$$TEMP_IMAGE_TAG . && \
+	@TEMP_IMAGE_TAG=$(date +%s)-build-test; \
+	$(DOCKER_CMD) build --target production --tag temp-build-test:$TEMP_IMAGE_TAG . && \
 	echo "Build successful. Cleaning up temporary image..." && \
-	$(DOCKER_CMD) rmi temp-build-test:$$TEMP_IMAGE_TAG || true
+	$(DOCKER_CMD) rmi temp-build-test:$TEMP_IMAGE_TAG || true
