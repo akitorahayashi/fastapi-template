@@ -25,10 +25,10 @@ endif
 DOCKER_CMD := $(SUDO_PREFIX) docker
 
 # Load environment variables from .env file
-include .env
+-include .env
 
 # Define the project name from environment variable
-PROJECT_NAME ?= $(PROJECT_NAME)
+PROJECT_NAME ?= fastapi-tmpl
 
 # Define project names for different environments
 DEV_PROJECT_NAME := $(PROJECT_NAME)-dev
