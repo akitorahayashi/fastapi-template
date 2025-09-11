@@ -47,6 +47,10 @@ def db_setup(
         os.environ["HOST_BIND_IP"] = os.getenv("HOST_BIND_IP", "127.0.0.1")
         os.environ["TEST_PORT"] = os.getenv("TEST_PORT", "8002")
 
+        # Get project name from environment
+        project_name = os.getenv("PROJECT_NAME", "fastapi-template")
+        test_project_name = f"{project_name}-db-test"
+
         # Define compose commands for DB only
         compose_up_command = docker_command + [
             "compose",
@@ -55,7 +59,7 @@ def db_setup(
             "-f",
             "docker-compose.test.override.yml",
             "--project-name",
-            "fastapi-template-db-test",
+            test_project_name,
             "up",
             "-d",
             "db",
@@ -67,7 +71,7 @@ def db_setup(
             "-f",
             "docker-compose.test.override.yml",
             "--project-name",
-            "fastapi-template-db-test",
+            test_project_name,
             "down",
             "--remove-orphans",
         ]
@@ -131,6 +135,10 @@ def db_setup(
         use_sudo = os.getenv("SUDO") == "true"
         docker_command = ["sudo", "docker"] if use_sudo else ["docker"]
 
+        # Get project name from environment
+        project_name = os.getenv("PROJECT_NAME", "fastapi-template")
+        test_project_name = f"{project_name}-db-test"
+
         compose_down_command = docker_command + [
             "compose",
             "-f",
@@ -138,7 +146,7 @@ def db_setup(
             "-f",
             "docker-compose.test.override.yml",
             "--project-name",
-            "fastapi-template-db-test",
+            test_project_name,
             "down",
             "--remove-orphans",
         ]
