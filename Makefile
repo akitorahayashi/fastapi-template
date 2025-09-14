@@ -127,14 +127,14 @@ migration: ## Generate a new database migration file. Usage: make migration m="Y
 .PHONY: format
 format: ## Format code with black and ruff --fix
 	@echo "Formatting code with black and ruff..."
-	black .
-	ruff check . --fix
+	uv run black .
+	uv run ruff check . --fix
 
 .PHONY: lint
 lint: ## Lint code with black check and ruff
 	@echo "Linting code with black check and ruff..."
-	black --check .
-	ruff check .
+	uv run black --check .
+	uv run ruff check .
 
 # ==============================================================================
 # TESTING
@@ -146,17 +146,17 @@ test: unit-test build-test db-test e2e-test ## Run the full test suite
 .PHONY: unit-test
 unit-test: ## Run the unit tests locally
 	@echo "Running unit tests..."
-	@python -m pytest tests/unit -s
+	@uv run pytest tests/unit -s
 
 .PHONY: db-test
 db-test: ## Run database tests locally
 	@echo "Running database tests..."
-	@python -m pytest tests/db -s
+	@uv run pytest tests/db -s
 
 .PHONY: e2e-test
 e2e-test: ## Run end-to-end tests against a live application stack
 	@echo "Running end-to-end tests..."
-	@python -m pytest tests/e2e -s
+	@uv run pytest tests/e2e -s
 
 .PHONY: build-test
 build-test: ## Build Docker image for testing without leaving artifacts
@@ -165,3 +165,16 @@ build-test: ## Build Docker image for testing without leaving artifacts
 	$(DOCKER_CMD) build --target production --tag temp-build-test:$TEMP_IMAGE_TAG . && \
 	echo "Build successful. Cleaning up temporary image..." && \
 	$(DOCKER_CMD) rmi temp-build-test:$TEMP_IMAGE_TAG || true
+
+# ==============================================================================
+# CLEANUP
+# ==============================================================================
+
+.PHONY: clean
+clean: ## Remove __pycache__ and .venv to make project lightweight
+	@echo "🧹 Cleaning up project..."
+	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	@rm -rf .venv
+	@rm -rf .pytest_cache
+	@rm -rf .ruff_cache
+	@echo "✅ Cleanup completed"
