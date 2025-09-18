@@ -15,6 +15,17 @@ os.environ["HOST_BIND_IP"] = os.getenv("HOST_BIND_IP", "127.0.0.1")
 os.environ["TEST_PORT"] = os.getenv("TEST_PORT", "8002")
 
 
+@pytest.fixture(scope="session")
+def api_base_url():
+    """
+    Provides the base URL for the API service.
+    Uses the e2e_setup fixture for container management.
+    """
+    host_bind_ip = os.getenv("HOST_BIND_IP", "127.0.0.1")
+    host_port = os.getenv("TEST_PORT", "8002")
+    return f"http://{host_bind_ip}:{host_port}"
+
+
 def _is_service_ready(url: str, expected_status: int = 200) -> bool:
     """Check if HTTP service is ready by making a request."""
     try:

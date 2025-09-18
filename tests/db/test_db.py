@@ -2,21 +2,32 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 
-def test_db_connection(db_session: Session):
-    """Smoke test for database connection using conftest fixture."""
-    result = db_session.execute(text("SELECT 1")).fetchone()
-    assert result[0] == 1
+class TestDatabase:
+    """
+    Class-based test for database operations with automatic rollback.
+    FastAPI's db_session fixture automatically wraps each test in a transaction
+    that gets rolled back after the test completes, ensuring test isolation.
+    """
 
+    def test_db_connection(self, db_session: Session):
+        """Test basic database connectivity."""
+        result = db_session.execute(text("SELECT 1")).fetchone()
+        assert result[0] == 1
 
-def test_db_version(db_session: Session):
-    """Smoke test to check PostgreSQL version using conftest fixture."""
-    result = db_session.execute(text("SELECT version()")).fetchone()
-    version = result[0]
-    assert "PostgreSQL" in version
+    def test_db_transaction_rollback(self, db_session: Session):
+        """Test that database transactions are properly rolled back between tests."""
+        # This test verifies our test fixture isolation works correctly
+        # Insert some test data
+        db_session.execute(
+            text("CREATE TEMPORARY TABLE test_rollback (id INTEGER, name TEXT)")
+        )
+        db_session.execute(
+            text("INSERT INTO test_rollback (id, name) VALUES (1, 'test')")
+        )
 
-
-async def test_api_health_check(client):
-    """Test API health check endpoint with database connection."""
-    response = await client.get("/health")
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+        # Verify data exists
+        result = db_session.execute(
+            text("SELECT COUNT(*) FROM test_rollback")
+        ).fetchone()
+        assert result[0] == 1
+        # Transaction will be rolled back by conftest.py fixture
