@@ -12,7 +12,8 @@ class Settings(BaseSettings):
     from the project root, there's no need to explicitly specify the file path.
     """
 
-    DATABASE_URL: str
+    DATABASE_URL: str | None = None
+    USE_SQLITE: bool = True
 
 
 @lru_cache
