@@ -16,13 +16,34 @@ def _initialize_factory():
     """
     Lazy initializer for the database engine and session factory.
     This prevents settings from being loaded at import time and is thread-safe.
+
+    It dynamically switches between PostgreSQL and SQLite based on USE_SQLITE env var.
     """
     global _engine, _SessionLocal
-    # Use a lock to ensure that the engine and session factory are created only once.
     with _lock:
         if _engine is None:
             settings = get_settings()
-            _engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+
+            if settings.USE_SQLITE:
+                # Use SQLite (for sqlt-test or local execution)
+                # test_db.sqlite3 file will be created in project root
+                sqlite_file_path = "test_db.sqlite3"
+                db_url = f"sqlite:///{sqlite_file_path}"
+
+                # SQLite requires check_same_thread: False for FastAPI usage
+                _engine = create_engine(
+                    db_url, connect_args={"check_same_thread": False}
+                )
+
+            else:
+                # Use PostgreSQL (for pstg-test or production/dev containers)
+                if not settings.DATABASE_URL:
+                    raise ValueError(
+                        "USE_SQLITE=false requires DATABASE_URL to be set."
+                    )
+                db_url = settings.DATABASE_URL
+                _engine = create_engine(db_url, pool_pre_ping=True)
+
             _SessionLocal = sessionmaker(
                 autocommit=False, autoflush=False, bind=_engine
             )
@@ -51,3 +72,9 @@ def get_db():
 # --- Declarative Base for Models ---
 
 Base = declarative_base()
+
+
+# Make Base and Engine accessible to external modules (especially test fixtures)
+def get_engine():
+    _initialize_factory()
+    return _engine

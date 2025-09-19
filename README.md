@@ -10,14 +10,14 @@ A production-ready FastAPI template with modern development tooling, comprehensi
 - **Pytest** - Comprehensive testing with testcontainers
 - **Code Quality** - Black (formatter) + Ruff (linter)
 - **Database** - PostgreSQL with Alembic migrations
-- **Makefile** - Unified development commands
+- **justfile** - Unified development commands
 
 ## Quick Start
 
 ### 1. Setup Environment
 
 ```bash
-make setup
+just setup
 ```
 
 This installs dependencies with uv and creates `.env` file from `.env.example`.
@@ -25,7 +25,7 @@ This installs dependencies with uv and creates `.env` file from `.env.example`.
 ### 2. Start Development Server
 
 ```bash
-make up
+just up
 ```
 
 The API will be available at `http://127.0.0.1:8000` (configurable in `.env`).
@@ -33,7 +33,7 @@ The API will be available at `http://127.0.0.1:8000` (configurable in `.env`).
 ### 3. Run Tests
 
 ```bash
-make test
+just test
 ```
 
 Runs unit, database, and end-to-end tests using testcontainers for full isolation.
@@ -47,19 +47,18 @@ Runs unit, database, and end-to-end tests using testcontainers for full isolatio
 
 | Command | Description |
 |---------|-------------|
-| `make setup` | Initialize environment files |
-| `make up` | Start development containers |
-| `make down` | Stop development containers |
-| `make test` | Run all tests |
-| `make unit-test` | Run unit tests only |
-| `make db-test` | Run database tests only |
-| `make e2e-test` | Run end-to-end tests only |
-| `make format` | Format code with Black and fix with Ruff |
-| `make lint` | Check code format and lint |
-| `make shell` | Open shell in API container |
-| `make logs` | View API container logs |
-| `make migrate` | Run database migrations |
-| `make migration m="msg"` | Generate a new database migration |
+| `just setup` | Initialize environment files |
+| `just up` | Start development containers |
+| `just down` | Stop development containers |
+| `just test` | Run all tests |
+| `just unit-test` | Run unit tests only |
+| `just sqlt-test` | Run database tests with SQLite |
+| `just pstg-test` | Run database tests with PostgreSQL |
+| `just e2e-test` | Run end-to-end tests only |
+| `just format` | Format code with Black and fix with Ruff |
+| `just lint` | Check code format and lint |
+| `just rebuild` | Rebuild and restart API container |
+| `just clean` | Remove cache files and .venv |
 
 ## Project Structure
 
@@ -109,7 +108,7 @@ All tests run independently without external dependencies.
 ### Production
 
 ```bash
-make up-prod
+just up-prod
 ```
 
 Uses production environment configuration from `.env`.
@@ -170,7 +169,7 @@ docker build --target development -t myapp:dev .
 docker build --target production -t myapp:prod .
 
 # Test build (validates production build without keeping image)
-make build-test
+just build-test
 ```
 
 ## Adding Database Models
@@ -188,7 +187,7 @@ Database migrations run automatically in Docker containers.
 - **uv**: Ultra-fast dependency management
 - **Pytest**: Testing framework with testcontainers
 
-Run `make format` and `make lint` before committing.
+Run `just format` and `just lint` before committing.
 
 ## Volume Management
 

@@ -1,202 +1,75 @@
-import os
-import subprocess
-import time
-from typing import AsyncGenerator, Generator, Optional
+from typing import Generator
 
 import pytest
 from dotenv import load_dotenv
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import create_engine
-from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from alembic import command
-from alembic.config import Config
-from src.db.database import create_db_session
+from src.config.settings import get_settings
+from src.db.database import Base, create_db_session, get_engine
 from src.main import app
 
-# Load environment variables from .env file
+# Load .env and determine USE_SQLITE flag
 load_dotenv()
-
-
-@pytest.fixture(scope="session", autouse=True)
-def db_setup(
-    request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
-) -> Generator[str, None, None]:
-    """
-    Session-scoped fixture to manage the test database using docker-compose.
-
-    This fixture is automatically used by all tests in this directory and its
-    subdirectories. It handles xdist by having the master node start the DB
-    container and share its connection URL with worker nodes via a temporary file.
-    """
-    is_master = not hasattr(request.config, "workerinput")
-
-    db_conn_file = None
-    if request.config.pluginmanager.is_registered("xdist"):
-        # In xdist, tmp_path_factory provides a shared directory for the session.
-        root_tmp_dir = tmp_path_factory.getbasetemp().parent
-        db_conn_file = root_tmp_dir / "db_url.txt"
-
-    if is_master:
-        # Determine if sudo should be used based on environment variable
-        use_sudo = os.getenv("SUDO") == "true"
-        docker_command = ["sudo", "docker"] if use_sudo else ["docker"]
-
-        # Set environment variables for Docker Compose
-        os.environ["HOST_BIND_IP"] = os.getenv("HOST_BIND_IP", "127.0.0.1")
-        os.environ["TEST_PORT"] = os.getenv("TEST_PORT", "8002")
-
-        # Get project name from environment
-        project_name = os.getenv("PROJECT_NAME", "fastapi-template")
-        test_project_name = f"{project_name}-db-test"
-
-        # Define compose commands for DB only
-        compose_up_command = docker_command + [
-            "compose",
-            "-f",
-            "docker-compose.yml",
-            "-f",
-            "docker-compose.test.override.yml",
-            "--project-name",
-            test_project_name,
-            "up",
-            "-d",
-            "db",
-        ]
-        compose_down_command = docker_command + [
-            "compose",
-            "-f",
-            "docker-compose.yml",
-            "-f",
-            "docker-compose.test.override.yml",
-            "--project-name",
-            test_project_name,
-            "down",
-            "--remove-orphans",
-        ]
-
-        print("\n🚀 Starting PostgreSQL test container with docker-compose...")
-
-        try:
-            subprocess.run(
-                compose_up_command, check=True, timeout=300
-            )  # 5 minutes timeout
-
-            # Build database URL from environment variables
-            postgres_user = os.getenv("POSTGRES_USER", "user")
-            postgres_password = os.getenv("POSTGRES_PASSWORD", "password")
-            postgres_host = os.getenv("POSTGRES_HOST", "localhost")
-            postgres_port = os.getenv("POSTGRES_PORT", "5432")
-            postgres_db = os.getenv("POSTGRES_TEST_DB_NAME", "tmpl-api-test")
-
-            db_url_value = f"postgresql+psycopg://{postgres_user}:{postgres_password}@{postgres_host}:{postgres_port}/{postgres_db}"
-            os.environ["DATABASE_URL"] = db_url_value
-            print(f"✅ PostgreSQL container started: {db_url_value}")
-
-            # Wait for DB to be ready
-            time.sleep(5)
-
-            print("🔄 Running database migrations...")
-            alembic_cfg = Config()
-            alembic_cfg.set_main_option("script_location", "alembic")
-            alembic_cfg.set_main_option("sqlalchemy.url", db_url_value)
-            command.upgrade(alembic_cfg, "head")
-            print("✅ Database migrations completed!")
-
-            if db_conn_file:
-                db_conn_file.write_text(db_url_value)
-
-        except subprocess.CalledProcessError:
-            print("\n🛑 compose up failed; performing cleanup...")
-            subprocess.run(compose_down_command, check=False)
-            raise
-
-    else:  # worker node
-        if not db_conn_file:
-            pytest.fail(
-                "xdist is running but the db_conn_file path could not be determined."
-            )
-
-        timeout = 20
-        start_time = time.time()
-        while not db_conn_file.exists():
-            if time.time() - start_time > timeout:
-                pytest.fail(
-                    f"Worker could not find db_url.txt after {timeout} seconds."
-                )
-            time.sleep(0.1)
-        db_url_value = db_conn_file.read_text()
-
-    yield db_url_value
-
-    if is_master:
-        # Determine if sudo should be used based on environment variable
-        use_sudo = os.getenv("SUDO") == "true"
-        docker_command = ["sudo", "docker"] if use_sudo else ["docker"]
-
-        # Get project name from environment
-        project_name = os.getenv("PROJECT_NAME", "fastapi-template")
-        test_project_name = f"{project_name}-db-test"
-
-        compose_down_command = docker_command + [
-            "compose",
-            "-f",
-            "docker-compose.yml",
-            "-f",
-            "docker-compose.test.override.yml",
-            "--project-name",
-            test_project_name,
-            "down",
-            "--remove-orphans",
-        ]
-
-        print("\n🛑 Stopping PostgreSQL test container...")
-        subprocess.run(compose_down_command, check=False)
-        if db_conn_file and db_conn_file.exists():
-            db_conn_file.unlink(missing_ok=True)
+settings = get_settings()
+USE_SQLITE = settings.USE_SQLITE
 
 
 @pytest.fixture(scope="session")
-def db_url(db_setup: str) -> str:
+def db_engine():
     """
-    Fixture to provide the database URL to tests.
-    It receives the URL from the session-scoped db_setup fixture.
+    Fixture that provides DB engine for the entire test session.
+    USE_SQLITE=true case (sqlt-test):
+        - Creates all tables (create_all) for SQLite DB and returns engine.
+        - Drops all tables (drop_all) at session end.
+    USE_SQLITE=false case (pstg-test):
+        - Returns engine for PostgreSQL migrated by entrypoint.sh.
+        - (Does not create/drop tables)
     """
-    return db_setup
+    # Get engine initialized by application logic
+    engine = get_engine()
+
+    if USE_SQLITE:
+        # For SQLite mode, create all tables from models before tests
+        Base.metadata.create_all(bind=engine)
+
+    yield engine
+
+    if USE_SQLITE:
+        # For SQLite mode, drop all tables after tests
+        Base.metadata.drop_all(bind=engine)
+
+    # For PostgreSQL mode, DB is managed by container so do nothing
+    engine.dispose()
 
 
 @pytest.fixture
-def db_session(db_url: str) -> Generator[Session, None, None]:
+def db_session(db_engine) -> Generator[Session, None, None]:
     """
-    Provides a transactional scope for each test function.
+    Provides a transaction-scoped session for each test function.
+    Tests run within transactions and are rolled back on completion,
+    ensuring DB state independence between tests.
     """
-    engine: Optional[Engine] = None
-    db: Optional[Session] = None
+    # Depend on db_engine fixture and share the initialized engine
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
+    db = SessionLocal()
+
+    # Override FastAPI app's DI (get_db) with this test session
+    app.dependency_overrides[create_db_session] = lambda: db
+
     try:
-        engine = create_engine(db_url)
-        TestingSessionLocal = sessionmaker(
-            autocommit=False, autoflush=False, bind=engine
-        )
-        db = TestingSessionLocal()
-
-        app.dependency_overrides[create_db_session] = lambda: db
-
         yield db
     finally:
-        if db:
-            db.rollback()
-            db.close()
-        if engine:
-            engine.dispose()
+        db.rollback()  # Rollback all changes
+        db.close()
         app.dependency_overrides.pop(create_db_session, None)
 
 
 @pytest.fixture
-async def client(db_session: Session) -> AsyncGenerator[AsyncClient, None]:
+async def client(db_session: Session) -> Generator[AsyncClient, None, None]:
     """
-    Create an httpx.AsyncClient instance that is properly configured for
-    database-dependent tests.
+    Creates httpx.AsyncClient configured for database-dependent tests.
+    (Depends on db_session fixture to ensure DI override is applied)
     """
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
