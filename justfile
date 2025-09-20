@@ -7,13 +7,13 @@ set dotenv-load
 PROJECT_NAME := env("PROJECT_NAME", "fastapi-tmpl")
 POSTGRES_IMAGE := env("POSTGRES_IMAGE", "postgres:16-alpine")
 
-DEV_PROJECT_NAME := "{{PROJECT_NAME}}-dev"
-PROD_PROJECT_NAME := "{{PROJECT_NAME}}-prod"
-TEST_PROJECT_NAME := "{{PROJECT_NAME}}-test"
+DEV_PROJECT_NAME := PROJECT_NAME + "-dev"
+PROD_PROJECT_NAME := PROJECT_NAME + "-prod"
+TEST_PROJECT_NAME := PROJECT_NAME + "-test"
 
-PROD_COMPOSE := "docker compose -f docker-compose.yml --project-name {{PROD_PROJECT_NAME}}"
-DEV_COMPOSE  := "docker compose -f docker-compose.yml -f docker-compose.dev.override.yml --project-name {{DEV_PROJECT_NAME}}"
-TEST_COMPOSE := "docker compose -f docker-compose.yml -f docker-compose.test.override.yml --project-name {{TEST_PROJECT_NAME}}"
+PROD_COMPOSE := "docker compose -f docker-compose.yml --project-name " + PROD_PROJECT_NAME
+DEV_COMPOSE  := "docker compose -f docker-compose.yml -f docker-compose.dev.override.yml --project-name " + DEV_PROJECT_NAME
+TEST_COMPOSE := "docker compose -f docker-compose.yml -f docker-compose.test.override.yml --project-name " + TEST_PROJECT_NAME
 
 # default target
 default: help
@@ -74,9 +74,9 @@ down-prod:
 # Rebuild and restart API container only
 rebuild:
     @echo "Rebuilding and restarting API service..."
-    @${DEV_COMPOSE} down --remove-orphans
-    @${DEV_COMPOSE} build --no-cache api
-    @${DEV_COMPOSE} up -d
+    @{{DEV_COMPOSE}} down --remove-orphans
+    @{{DEV_COMPOSE}} build --no-cache api
+    @{{DEV_COMPOSE}} up -d
 
 # ==============================================================================
 # CODE QUALITY
