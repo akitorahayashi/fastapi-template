@@ -2,25 +2,27 @@
 # justfile for FastAPI Project Automation
 # ==============================================================================
 
+set dotenv-load
+
 PROJECT_NAME := env("PROJECT_NAME", "fastapi-tmpl")
 POSTGRES_IMAGE := env("POSTGRES_IMAGE", "postgres:16-alpine")
 
-DEV_PROJECT_NAME := PROJECT_NAME + "-dev"
-PROD_PROJECT_NAME := PROJECT_NAME + "-prod"
-TEST_PROJECT_NAME := PROJECT_NAME + "-test"
+DEV_PROJECT_NAME := "{{PROJECT_NAME}}-dev"
+PROD_PROJECT_NAME := "{{PROJECT_NAME}}-prod"
+TEST_PROJECT_NAME := "{{PROJECT_NAME}}-test"
 
-DEV_COMPOSE  := "docker compose -f docker-compose.yml -f docker-compose.dev.override.yml --project-name " + DEV_PROJECT_NAME
-PROD_COMPOSE := "docker compose -f docker-compose.yml --project-name " + PROD_PROJECT_NAME
-TEST_COMPOSE := "docker compose -f docker-compose.yml -f docker-compose.test.override.yml --project-name " + TEST_PROJECT_NAME
+PROD_COMPOSE := "docker compose -f docker-compose.yml --project-name {{PROD_PROJECT_NAME}}"
+DEV_COMPOSE  := "docker compose -f docker-compose.yml -f docker-compose.dev.override.yml --project-name {{DEV_PROJECT_NAME}}"
+TEST_COMPOSE := "docker compose -f docker-compose.yml -f docker-compose.test.override.yml --project-name {{TEST_PROJECT_NAME}}"
+
+# default target
+default: help
 
 # Show available recipes
 help:
     @echo "Usage: just [recipe]"
     @echo "Available recipes:"
     @just --list | tail -n +2 | awk '{printf "  \033[36m%-20s\033[0m %s\n", $1, substr($0, index($0, $2))}'
-
-default: help
-
 # ==============================================================================
 # Environment Setup
 # ==============================================================================
@@ -52,29 +54,29 @@ setup:
 # Start all development containers in detached mode
 up:
     @echo "Starting up development services..."
-    @{{DEV_COMPOSE}} up -d
+    @${DEV_COMPOSE} up -d
 
 # Stop and remove all development containers
 down:
     @echo "Shutting down development services..."
-    @{{DEV_COMPOSE}} down --remove-orphans
+    @${DEV_COMPOSE} down --remove-orphans
 
 # Start all production-like containers
 up-prod:
     @echo "Starting up production-like services..."
-    @{{PROD_COMPOSE}} up -d --build --pull always --remove-orphans
+    @${PROD_COMPOSE} up -d --build --pull always --remove-orphans
 
 # Stop and remove all production-like containers
 down-prod:
     @echo "Shutting down production-like services..."
-    @{{PROD_COMPOSE}} down --remove-orphans
+    @${PROD_COMPOSE} down --remove-orphans
 
 # Rebuild and restart API container only
 rebuild:
     @echo "Rebuilding and restarting API service..."
-    @{{DEV_COMPOSE}} down --remove-orphans
-    @{{DEV_COMPOSE}} build --no-cache api
-    @{{DEV_COMPOSE}} up -d
+    @${DEV_COMPOSE} down --remove-orphans
+    @${DEV_COMPOSE} build --no-cache api
+    @${DEV_COMPOSE} up -d
 
 # ==============================================================================
 # CODE QUALITY
@@ -117,9 +119,9 @@ docker-test: build-test pstg-test e2e-test
 
 # Build Docker image for testing without leaving artifacts
 build-test:
-    @echo "Building Docker image for testing (clean build)..."
+    @echo "Building Docker image for testing..."
     @TEMP_IMAGE_TAG=$(date +%s)-build-test; \
-    docker build --target production --tag temp-build-test:$TEMP_IMAGE_TAG . && \
+    docker build --target production --tag temp-build-test:$TEMP_IMAGE_TAG -f api/Dockerfile . && \
     echo "Build successful. Cleaning up temporary image..." && \
     docker rmi temp-build-test:$TEMP_IMAGE_TAG || true
 
@@ -136,7 +138,7 @@ pstg-test:
 
 # Run e2e tests against containerized application stack (runs from host)
 e2e-test:
-    @echo "🚀 Running e2e tests (from host)..."
+    @echo "🚀 Running e2e tests..."
     @USE_SQLITE=false uv run pytest tests/e2e -v -s
 
 # ==============================================================================
