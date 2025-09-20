@@ -1,4 +1,4 @@
-language: "ja"
+language: "en"
 
 reviews:
   high_level_summary: true
@@ -8,21 +8,21 @@ reviews:
 chat:
   auto_reply: true
 
-# レビュー対象から除外するファイルのパターンを指定
+# Specify file patterns to exclude from review
 path_filters:
-  # 仮想環境
+  # Virtual environment
   - "!**/venv/**"
   - "!**/.venv/**"
 
-  # Django / ORM マイグレーションファイル
+  # Django / ORM migration files
   - "!**/migrations/**"
 
-  # キャッシュ / ビルド関連ファイル
+  # Cache / build related files
   - "!**/__pycache__/**"
   - "!**/.pytest_cache/**"
   - "!**/.cache/**"
 
-  # 静的ファイル / メディアファイル
+  # Static files / media files
   - "!**/static/**"
   - "!**/media/**"
   - "!**/*.png"
@@ -31,10 +31,10 @@ path_filters:
   - "!**/*.css"
   - "!**/*.js"
 
-  # 環境変数 / シークレットファイル
+  # Environment variables / secret files
   - "!**/.env"
 
-  # フロントエンドのビルド出力ディレクトリ
+  # Frontend build output directory
   - "!**/.next/**"
   - "!**/dist/**"
   - "!**/.nuxt/**"
