@@ -11,8 +11,6 @@ target_metadata = None
 def run_migrations_online() -> None:
     settings = get_settings()
     database_url = settings.DATABASE_URL
-    if not database_url:
-        raise ValueError("DATABASE_URL must be set in settings")
 
     connectable = create_engine(
         database_url,

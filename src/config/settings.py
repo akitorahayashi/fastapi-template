@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import computed_field
+from pydantic import computed_field, model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "user"
     POSTGRES_PASSWORD: str = "password"
     POSTGRES_DB: str = ""
+
+    @model_validator(mode="after")
+    def _check_postgres_db(self) -> "Settings":
+        if not self.USE_SQLITE and not self.POSTGRES_DB:
+            raise ValueError("POSTGRES_DB must be set when USE_SQLITE is False.")
+        return self
 
     @computed_field
     @property
