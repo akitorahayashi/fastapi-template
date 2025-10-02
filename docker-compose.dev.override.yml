@@ -1,8 +1,7 @@
 services:
   db:
     environment:
-      - DATABASE_URL=postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DEV_DB_NAME}
-      - POSTGRES_DB=${POSTGRES_DEV_DB_NAME}
+      - POSTGRES_DB=${POSTGRES_DEV_DB}
 
   api:
     build:
@@ -10,8 +9,7 @@ services:
     ports: !override
       - "${HOST_BIND_IP}:${DEV_PORT}:8000"
     environment:
-      - DATABASE_URL=postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DEV_DB_NAME}
-      - POSTGRES_DB_NAME=${POSTGRES_DEV_DB_NAME}
+      - POSTGRES_DB=${POSTGRES_DEV_DB}
     volumes:
       - .:/app
       - /app/.venv

@@ -13,9 +13,9 @@ if [ "$#" -eq 0 ] || [ "$1" = "uvicorn" ]; then
     
     # Create database if it doesn't exist
     echo "Checking if database exists and creating if necessary..."
-    while ! PGPASSWORD="${POSTGRES_PASSWORD}" psql -h db -U "${POSTGRES_USER}" -d postgres -c "SELECT 1 FROM pg_database WHERE datname='${POSTGRES_DB_NAME}'" | grep -q 1; do
-        echo "Creating database ${POSTGRES_DB_NAME}..."
-        PGPASSWORD="${POSTGRES_PASSWORD}" psql -h db -U "${POSTGRES_USER}" -d postgres -c "CREATE DATABASE \"${POSTGRES_DB_NAME}\";" || true
+    while ! PGPASSWORD="${POSTGRES_PASSWORD}" psql -h db -U "${POSTGRES_USER}" -d postgres -c "SELECT 1 FROM pg_database WHERE datname='${POSTGRES_DB}'" | grep -q 1; do
+        echo "Creating database ${POSTGRES_DB}..."
+        PGPASSWORD="${POSTGRES_PASSWORD}" psql -h db -U "${POSTGRES_USER}" -d postgres -c "CREATE DATABASE \"${POSTGRES_DB}\";" || true
         sleep 1
     done
     echo "Database exists."

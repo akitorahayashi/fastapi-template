@@ -1,8 +1,7 @@
-import os
-
 from sqlalchemy import create_engine, pool
 
 from alembic import context
+from src.config.settings import get_settings
 
 config = context.config
 
@@ -10,9 +9,10 @@ target_metadata = None
 
 
 def run_migrations_online() -> None:
-    database_url = os.getenv("DATABASE_URL")
+    settings = get_settings()
+    database_url = settings.DATABASE_URL
     if not database_url:
-        raise ValueError("DATABASE_URL environment variable must be set")
+        raise ValueError("DATABASE_URL must be set in settings")
 
     connectable = create_engine(
         database_url,

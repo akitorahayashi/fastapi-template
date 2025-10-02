@@ -87,11 +87,13 @@ Configure in `.env`:
 - `HOST_PORT` - Port to bind (default: 8000)
 - `DEV_PORT` - Development port (default: 8001)
 - `TEST_PORT` - Test port (default: 8002)
+- `POSTGRES_HOST` - PostgreSQL host (default: db)
+- `POSTGRES_PORT` - PostgreSQL port (default: 5432)
 - `POSTGRES_USER` - PostgreSQL username
 - `POSTGRES_PASSWORD` - PostgreSQL password
-- `POSTGRES_HOST_DB_NAME` - Production database name
-- `POSTGRES_DEV_DB_NAME` - Development database name
-- `POSTGRES_TEST_DB_NAME` - Test database name
+- `POSTGRES_HOST_DB` - Production database name
+- `POSTGRES_DEV_DB` - Development database name
+- `POSTGRES_TEST_DB` - Test database name
 
 ## Testing
 
