@@ -1,5 +1,6 @@
 from typing import Generator
 
+import os
 import pytest
 from dotenv import load_dotenv
 from httpx import ASGITransport, AsyncClient
@@ -38,6 +39,10 @@ def db_engine():
     if USE_SQLITE:
         # For SQLite mode, drop all tables after tests
         Base.metadata.drop_all(bind=engine)
+        # Remove the SQLite file
+        sqlite_file_path = "test_db.sqlite3"
+        if os.path.exists(sqlite_file_path):
+            os.remove(sqlite_file_path)
 
     # For PostgreSQL mode, DB is managed by container so do nothing
     engine.dispose()

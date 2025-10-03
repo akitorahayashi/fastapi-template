@@ -152,5 +152,6 @@ clean:
     @rm -rf .venv
     @rm -rf .pytest_cache
     @rm -rf .ruff_cache
+    @rm -rf .uv-cache
     @rm -f test_db.sqlite3
     @echo "✅ Cleanup completed"
