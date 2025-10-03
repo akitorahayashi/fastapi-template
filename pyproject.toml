@@ -48,6 +48,7 @@ exclude = '''
 /(
     \.git
     | \.mypy_cache
+    | \.uv-cache
     | \.venv
     | venv
     | env
@@ -65,6 +66,7 @@ exclude = [
     "migrations",
     "db.sqlite3",
     "*.pyc",
+    ".uv-cache",
     ".venv",
     "venv",
     "env",

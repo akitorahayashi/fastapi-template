@@ -1,6 +1,6 @@
-from typing import Generator
-
 import os
+from typing import AsyncGenerator, Generator
+
 import pytest
 from dotenv import load_dotenv
 from httpx import ASGITransport, AsyncClient
@@ -71,7 +71,7 @@ def db_session(db_engine) -> Generator[Session, None, None]:
 
 
 @pytest.fixture
-async def client(db_session: Session) -> Generator[AsyncClient, None, None]:
+async def client(db_session: Session) -> AsyncGenerator[AsyncClient, None]:
     """
     Creates httpx.AsyncClient configured for database-dependent tests.
     (Depends on db_session fixture to ensure DI override is applied)
