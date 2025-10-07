@@ -18,7 +18,7 @@ os.environ["TEST_PORT"] = os.getenv("TEST_PORT", "8002")
 @pytest.fixture(autouse=True)
 def setup_e2e_test(setup_e2e_test_env):
     """Set environment variables for e2e tests."""
-    setup_e2e_test_env
+    pass
 
 
 @pytest.fixture(scope="session")

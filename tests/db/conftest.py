@@ -19,7 +19,7 @@ USE_SQLITE = settings.USE_SQLITE
 @pytest.fixture(autouse=True)
 def setup_db_test(setup_db_test_env):
     """Set environment variables for db tests."""
-    setup_db_test_env
+    pass
 
 
 @pytest.fixture(scope="session")
