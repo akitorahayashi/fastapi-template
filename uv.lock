@@ -202,7 +202,7 @@ wheels = [
 [[package]]
 name = "fastapi-template"
 version = "1.0.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "alembic" },
     { name = "fastapi" },
