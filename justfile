@@ -107,6 +107,7 @@ test:
 local-test:
   @just unit-test
   @just sqlt-test
+  @just intg-test
 
 # Run unit tests locally
 unit-test:
@@ -118,23 +119,33 @@ sqlt-test:
     @echo "🚀 Running database tests with SQLite..."
     @USE_SQLITE=true uv run pytest tests/db
 
+# Run integration tests locally
+intg-test:
+    @echo "🚀 Running integration tests..."
+    @uv run pytest tests/intg
+
 # Run all Docker-based tests
 docker-test:
+  @just build-test
   @just psql-test
   @just e2e-test
 
+# Build Docker image to verify build process
+build-test:
+    @echo "Building Docker image to verify build process..."
+    docker build --no-cache --target production -t test-build:temp . || (echo "Docker build failed"; exit 1)
+    @echo "✅ Docker build successful"
+    @echo "Cleaning up test image..."
+    -docker rmi test-build:temp 2>/dev/null || true
+
 # Run database tests with PostgreSQL
 psql-test:
-    @echo "🚀 Starting TEST containers for PostgreSQL database test..."
+    @echo "🚀 Starting TEST containers for database test..."
     @USE_SQLITE=false {{TEST_COMPOSE}} up -d --build
-    @echo "Waiting for migrations to be applied..."
-    @USE_SQLITE=false {{TEST_COMPOSE}} exec api sh -c "while ! alembic current | grep -q .; do echo 'Waiting for migrations...'; sleep 2; done"
-    @echo "Running database tests inside api container (against PostgreSQL)..."
-    @USE_SQLITE=false {{TEST_COMPOSE}} exec api pytest tests/db; \
-    EXIT_CODE=$?; \
-    echo "🔴 Stopping TEST containers..."; \
-    {{TEST_COMPOSE}} down --remove-orphans; \
-    exit $EXIT_CODE
+    @echo "Running database tests..."
+    -USE_SQLITE=false {{TEST_COMPOSE}} exec api pytest tests/db -v -s
+    @echo "🔴 Stopping TEST containers..."
+    @USE_SQLITE=false {{TEST_COMPOSE}} down
 
 # Run e2e tests against containerized application stack
 e2e-test:

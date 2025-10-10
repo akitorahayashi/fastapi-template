@@ -15,6 +15,11 @@ def setup_db_test_env(monkeypatch):
     # monkeypatch.setenv("USE_MOCK_SERVICE_A", "true")
 
 
+def setup_intg_test_env(monkeypatch):
+    """Setup environment variables for integration tests."""
+    monkeypatch.setenv("USE_SQLITE", "true")
+
+
 def setup_e2e_test_env(monkeypatch):
     """Setup environment variables for E2E tests - use real services."""
     monkeypatch.setenv("USE_SQLITE", "false")
