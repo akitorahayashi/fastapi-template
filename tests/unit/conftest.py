@@ -1,7 +1,7 @@
 import pytest
 
+
 @pytest.fixture(autouse=True)
-def setup_unit_test(monkeypatch):
+def setup_unit_test(setup_unit_test_env):
     """Set environment variables for unit tests."""
-    from tests.envs import setup_unit_test_env
-    setup_unit_test_env(monkeypatch)
+    setup_unit_test_env

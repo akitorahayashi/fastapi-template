@@ -112,17 +112,17 @@ local-test:
 # Run unit tests locally
 unit-test:
     @echo "🚀 Running unit tests..."
-    @uv run pytest tests/unit
+    @uv run pytest tests/unit -v -s
 
 # Run database tests with SQLite
 sqlt-test:
     @echo "🚀 Running database tests with SQLite..."
-    @USE_SQLITE=true uv run pytest tests/db
+    @USE_SQLITE=true uv run pytest tests/db -v -s
 
 # Run integration tests locally
 intg-test:
     @echo "🚀 Running integration tests..."
-    @uv run pytest tests/intg
+    @uv run pytest tests/intg -v -s
 
 # Run all Docker-based tests
 docker-test:
