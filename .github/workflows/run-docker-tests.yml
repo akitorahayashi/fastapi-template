@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test_target: [build-test, pstg-test, e2e-test]
+        test_target: [build-test, psql-test, e2e-test]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
