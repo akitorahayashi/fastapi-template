@@ -15,6 +15,13 @@ os.environ["HOST_BIND_IP"] = os.getenv("HOST_BIND_IP", "127.0.0.1")
 os.environ["TEST_PORT"] = os.getenv("TEST_PORT", "8002")
 
 
+@pytest.fixture(autouse=True)
+def setup_e2e_test(monkeypatch):
+    """Set environment variables for e2e tests."""
+    from tests.envs import setup_e2e_test_env
+    setup_e2e_test_env(monkeypatch)
+
+
 @pytest.fixture(scope="session")
 def api_base_url():
     """

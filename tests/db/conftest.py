@@ -16,6 +16,13 @@ settings = get_settings()
 USE_SQLITE = settings.USE_SQLITE
 
 
+@pytest.fixture(autouse=True)
+def setup_db_test(monkeypatch):
+    """Set environment variables for db tests."""
+    from tests.envs import setup_db_test_env
+    setup_db_test_env(monkeypatch)
+
+
 @pytest.fixture(scope="session")
 def db_engine():
     """
