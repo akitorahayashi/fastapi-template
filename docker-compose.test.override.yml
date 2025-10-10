@@ -1,9 +1,8 @@
 services:
   db:
-    ports:
-      - "${HOST_BIND_IP}:5432:5432"
     environment:
       - POSTGRES_DB=${POSTGRES_TEST_DB}
+    volumes: !override []
 
   api:
     build:
