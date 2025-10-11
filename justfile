@@ -4,7 +4,7 @@
 
 set dotenv-load
 
-PROJECT_NAME := env("PROJECT_NAME", "fastapi-tmpl")
+PROJECT_NAME := env("FAPI_TEMPL_PROJECT_NAME", "fastapi-tmpl")
 POSTGRES_IMAGE := env("POSTGRES_IMAGE", "postgres:16-alpine")
 
 DEV_PROJECT_NAME := PROJECT_NAME + "-dev"
@@ -54,29 +54,28 @@ setup:
 # Start all development containers in detached mode
 up:
     @echo "Starting up development services..."
-    @${DEV_COMPOSE} up -d
+    @{{DEV_COMPOSE}} up -d
 
 # Stop and remove all development containers
 down:
     @echo "Shutting down development services..."
-    @${DEV_COMPOSE} down --remove-orphans
+    @{{DEV_COMPOSE}} down --remove-orphans
 
 # Start all production-like containers
 up-prod:
     @echo "Starting up production-like services..."
-    @${PROD_COMPOSE} up -d --build --pull always --remove-orphans
+    @{{PROD_COMPOSE}} up -d --build --pull always --remove-orphans
 
 # Stop and remove all production-like containers
 down-prod:
     @echo "Shutting down production-like services..."
-    @${PROD_COMPOSE} down --remove-orphans
+    @{{PROD_COMPOSE}} down --remove-orphans
 
 # Rebuild and restart API container only
 rebuild:
     @echo "Rebuilding and restarting API service..."
     @{{DEV_COMPOSE}} down --remove-orphans
-    @{{DEV_COMPOSE}} build --no-cache api
-    @{{DEV_COMPOSE}} up -d
+    @{{DEV_COMPOSE}} build --no-cache fapi-tmpl
 
 # ==============================================================================
 # CODE QUALITY
@@ -143,7 +142,7 @@ psql-test:
     @echo "🚀 Starting TEST containers for database test..."
     @USE_SQLITE=false {{TEST_COMPOSE}} up -d --build
     @echo "Running database tests..."
-    -USE_SQLITE=false {{TEST_COMPOSE}} exec api pytest tests/db -v -s
+    -USE_SQLITE=false {{TEST_COMPOSE}} exec fapi-tmpl pytest tests/db -v -s
     @echo "🔴 Stopping TEST containers..."
     @USE_SQLITE=false {{TEST_COMPOSE}} down
 

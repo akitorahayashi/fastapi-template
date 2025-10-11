@@ -3,9 +3,6 @@ name: Run Docker Tests
 on:
   workflow_call:
 
-permissions:
-  contents: read
-
 jobs:
   run-docker-tests:
     runs-on: ubuntu-latest

@@ -38,7 +38,7 @@ fi
 if [ "$#" -gt 0 ]; then
     exec "$@"
 else
-    WORKERS=${NUM_OF_UVICORN_WORKERS:-4}
+    WORKERS=${FAPI_TEMPL_NUM_OF_UVICORN_WORKERS:-4}
     echo "Starting server on 0.0.0.0:8000 with ${WORKERS} worker(s)..."
     exec uvicorn src.main:app \
         --host "0.0.0.0" \
