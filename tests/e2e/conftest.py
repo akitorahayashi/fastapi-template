@@ -58,7 +58,7 @@ def e2e_setup() -> Generator[None, None, None]:
     """
     health_url = f"http://{TEST_HOST}:{TEST_PORT}/health"
 
-    project_name = os.getenv("FAPI_TEMPL_PROJECT_NAME", "fapi-tmpl")
+    project_name = os.getenv("FAPI_TEMPL_PROJECT_NAME", "fapi-db-tmpl")
     test_project_name = f"{project_name}-test"
 
     # Define base compose command

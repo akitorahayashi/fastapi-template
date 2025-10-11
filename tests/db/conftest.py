@@ -6,9 +6,9 @@ from dotenv import load_dotenv
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.orm import Session, sessionmaker
 
-from src.config import db_settings
-from src.db.database import Base, create_db_session, get_engine
-from src.main import app
+from src.fapi_db_tmpl.config import db_settings
+from src.fapi_db_tmpl.db.database import Base, create_db_session, get_engine
+from src.fapi_db_tmpl.main import app
 
 # Load .env and determine USE_SQLITE flag
 load_dotenv()

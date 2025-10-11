@@ -1,7 +1,7 @@
 [project]
-name = "fapi-tmpl"
+name = "fapi-db-tmpl"
 version = "1.0.0"
-description = "A production-ready FastAPI project template."
+description = "A production-ready FastAPI project template with database."
 authors = [{ name = "akitorahayashi" }]
 requires-python = ">=3.12,<4.0"
 dependencies = [
@@ -35,8 +35,8 @@ dev = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.uv]
-package = false
+[tool.hatch.build.targets.wheel]
+packages = ["src/fapi_db_tmpl"]
 
 [tool.pytest.ini_options]
 python_files = "test_*.py"
