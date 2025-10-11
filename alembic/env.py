@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, pool
 
 from alembic import context
-from src.config.settings import get_settings
+from src.config import db_settings
 
 config = context.config
 
@@ -9,7 +9,7 @@ target_metadata = None
 
 
 def run_migrations_online() -> None:
-    settings = get_settings()
+    settings = db_settings
     database_url = settings.DATABASE_URL
 
     connectable = create_engine(

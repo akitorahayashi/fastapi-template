@@ -3,7 +3,7 @@ import threading
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-from src.config.settings import get_settings
+from src.config import db_settings
 
 # --- Lazy Initialization for Database Engine and Session Factory ---
 
@@ -22,14 +22,12 @@ def _initialize_factory():
     global _engine, _SessionLocal
     with _lock:
         if _engine is None:
-            settings = get_settings()
+            settings = db_settings
 
-            if settings.USE_SQLITE:
+            db_url = settings.DATABASE_URL
+
+            if settings.use_sqlite:
                 # Use SQLite (for sqlt-test or local execution)
-                # test_db.sqlite3 file will be created in project root
-                sqlite_file_path = "test_db.sqlite3"
-                db_url = f"sqlite:///{sqlite_file_path}"
-
                 # SQLite requires check_same_thread: False for FastAPI usage
                 _engine = create_engine(
                     db_url, connect_args={"check_same_thread": False}
@@ -37,11 +35,6 @@ def _initialize_factory():
 
             else:
                 # Use PostgreSQL (for pstg-test or production/dev containers)
-                if not settings.DATABASE_URL:
-                    raise ValueError(
-                        "USE_SQLITE=false requires DATABASE_URL to be set."
-                    )
-                db_url = settings.DATABASE_URL
                 _engine = create_engine(db_url, pool_pre_ping=True)
 
             _SessionLocal = sessionmaker(

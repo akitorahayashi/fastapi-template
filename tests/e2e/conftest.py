@@ -7,11 +7,19 @@ import httpx
 import pytest
 from dotenv import load_dotenv
 
+from tests.envs import setup_e2e_test_env
+
 # Load .env file to get Docker Compose port configuration
 load_dotenv()
 
 TEST_HOST = os.getenv("FAPI_TEMPL_HOST_BIND_IP", "127.0.0.1")
 TEST_PORT = int(os.getenv("FAPI_TEMPL_TEST_PORT", "8002"))
+
+
+@pytest.fixture(autouse=True)
+def setup_e2e_test(monkeypatch):
+    """Setup environment variables for E2E tests."""
+    setup_e2e_test_env(monkeypatch)
 
 
 @pytest.fixture(scope="session")
@@ -50,12 +58,14 @@ def _wait_for_service(url: str, timeout: int = 120, interval: int = 5) -> None:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def e2e_setup() -> Generator[None, None, None]:
+def e2e_setup(monkeypatch) -> Generator[None, None, None]:
     """
     Manages the lifecycle of the application for end-to-end testing.
     This fixture assumes 'make e2e-test' will manage the containers,
     but it performs the health check wait just in case.
     """
+    monkeypatch.setenv("USE_SQLITE", "false")
+
     health_url = f"http://{TEST_HOST}:{TEST_PORT}/health"
 
     project_name = os.getenv("PROJECT_NAME", "fapi-tmpl")

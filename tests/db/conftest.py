@@ -6,20 +6,21 @@ from dotenv import load_dotenv
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.orm import Session, sessionmaker
 
-from src.config.settings import get_settings
+from src.config import db_settings
 from src.db.database import Base, create_db_session, get_engine
 from src.main import app
+from tests.envs import setup_db_test_env
 
 # Load .env and determine USE_SQLITE flag
 load_dotenv()
-settings = get_settings()
-USE_SQLITE = settings.USE_SQLITE
+settings = db_settings
+USE_SQLITE = settings.use_sqlite
 
 
 @pytest.fixture(autouse=True)
-def setup_db_test(setup_db_test_env):
+def setup_db_test(monkeypatch):
     """Set environment variables for db tests."""
-    pass
+    setup_db_test_env(monkeypatch)
 
 
 @pytest.fixture(scope="session")
