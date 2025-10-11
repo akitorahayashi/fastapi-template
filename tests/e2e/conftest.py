@@ -58,14 +58,12 @@ def _wait_for_service(url: str, timeout: int = 120, interval: int = 5) -> None:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def e2e_setup(monkeypatch) -> Generator[None, None, None]:
+def e2e_setup() -> Generator[None, None, None]:
     """
     Manages the lifecycle of the application for end-to-end testing.
     This fixture assumes 'make e2e-test' will manage the containers,
     but it performs the health check wait just in case.
     """
-    monkeypatch.setenv("USE_SQLITE", "false")
-
     health_url = f"http://{TEST_HOST}:{TEST_PORT}/health"
 
     project_name = os.getenv("FAPI_TEMPL_PROJECT_NAME", "fapi-tmpl")
