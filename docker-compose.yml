@@ -40,5 +40,5 @@ services:
 volumes:
   postgres-db:
     driver: local
-    name: ${PROJECT_NAME}-postgres-db-prod
+    name: ${FAPI_TEMPL_PROJECT_NAME}-postgres-db-prod
     external: false
