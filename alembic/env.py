@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, pool
 
 from alembic import context
-from src.config import db_settings
+from src.fapi_db_tmpl.config import db_settings
 
 config = context.config
 

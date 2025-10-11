@@ -14,7 +14,7 @@ services:
       retries: 10
     restart: unless-stopped
 
-  fapi-tmpl:
+  fapi-db-tmpl:
     build:
       context: .
       dockerfile: Dockerfile

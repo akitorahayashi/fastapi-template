@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from src.main import app
+from src.fapi_db_tmpl.main import app
 
 client = TestClient(app)
 

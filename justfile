@@ -75,7 +75,7 @@ down-prod:
 rebuild:
     @echo "Rebuilding and restarting API service..."
     @{{DEV_COMPOSE}} down --remove-orphans
-    @{{DEV_COMPOSE}} build --no-cache fapi-tmpl
+    @{{DEV_COMPOSE}} build --no-cache fapi-db-tmpl
 
 # ==============================================================================
 # CODE QUALITY
@@ -142,7 +142,7 @@ psql-test:
     @echo "🚀 Starting TEST containers for database test..."
     @USE_SQLITE=false {{TEST_COMPOSE}} up -d --build
     @echo "Running database tests..."
-    -USE_SQLITE=false {{TEST_COMPOSE}} exec fapi-tmpl pytest tests/db -v -s
+    -USE_SQLITE=false {{TEST_COMPOSE}} exec fapi-db-tmpl pytest tests/db -v -s
     @echo "🔴 Stopping TEST containers..."
     @USE_SQLITE=false {{TEST_COMPOSE}} down
 

@@ -37,7 +37,7 @@ def start_server():
                 sys.executable,
                 "-m",
                 "uvicorn",
-                "src.main:app",
+                "src.fapi_db_tmpl.main:app",
                 "--host",
                 TEST_HOST,
                 "--port",

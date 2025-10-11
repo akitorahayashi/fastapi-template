@@ -4,7 +4,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DEV_DB}
     volumes: !override []
 
-  fapi-tmpl:
+  fapi-db-tmpl:
     build:
       target: development
     ports: !override
