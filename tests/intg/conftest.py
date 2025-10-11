@@ -7,19 +7,11 @@ import httpx
 import pytest
 from dotenv import load_dotenv
 
-from tests.envs import setup_intg_test_env
-
 # Load .env file to get port configuration
 load_dotenv()
 
 TEST_HOST = os.getenv("FAPI_SANDBOX_HOST_IP", "127.0.0.1")
 TEST_PORT = int(os.getenv("FAPI_SANDBOX_HOST_PORT", "8080"))
-
-
-@pytest.fixture(autouse=True)
-def set_intg_test_env(monkeypatch):
-    """Setup environment variables for integration tests."""
-    setup_intg_test_env(monkeypatch)
 
 
 @pytest.fixture(scope="session")
@@ -34,6 +26,10 @@ def api_base_url():
 def start_server():
     process = None
     try:
+        # Prepare environment variables for subprocess
+        env = os.environ.copy()
+        env["USE_SQLITE"] = "true"
+
         # Start server in subprocess instead of thread for proper cleanup
 
         process = subprocess.Popen(
@@ -47,8 +43,7 @@ def start_server():
                 "--port",
                 str(TEST_PORT),
             ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            env=env,
         )
 
         # Wait for server to be ready by polling health endpoint

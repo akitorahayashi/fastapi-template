@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session, sessionmaker
 from src.config import db_settings
 from src.db.database import Base, create_db_session, get_engine
 from src.main import app
-from tests.envs import setup_db_test_env
 
 # Load .env and determine USE_SQLITE flag
 load_dotenv()
@@ -19,8 +18,12 @@ USE_SQLITE = settings.use_sqlite
 
 @pytest.fixture(autouse=True)
 def setup_db_test(monkeypatch):
-    """Set environment variables for db tests."""
-    setup_db_test_env(monkeypatch)
+    """Set environment variables for db tests.
+
+    Note: USE_SQLITE is passed from justfile, so not set here.
+    """
+    # USE_SQLITE is passed from justfile, so not set here
+    # monkeypatch.setenv("USE_MOCK_SERVICE_A", "true")
 
 
 @pytest.fixture(scope="session")

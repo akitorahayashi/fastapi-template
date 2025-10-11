@@ -7,19 +7,11 @@ import httpx
 import pytest
 from dotenv import load_dotenv
 
-from tests.envs import setup_e2e_test_env
-
 # Load .env file to get Docker Compose port configuration
 load_dotenv()
 
 TEST_HOST = os.getenv("FAPI_TEMPL_HOST_BIND_IP", "127.0.0.1")
 TEST_PORT = int(os.getenv("FAPI_TEMPL_TEST_PORT", "8002"))
-
-
-@pytest.fixture(autouse=True)
-def setup_e2e_test(monkeypatch):
-    """Setup environment variables for E2E tests."""
-    setup_e2e_test_env(monkeypatch)
 
 
 @pytest.fixture(scope="session")
@@ -95,7 +87,6 @@ def e2e_setup() -> Generator[None, None, None]:
 
     except (subprocess.CalledProcessError, TimeoutError) as e:
         print(f"\n🛑 E2E setup failed: {e}")
-        subprocess.run(compose_down_command, check=False)  # Attempt cleanup
         pytest.fail(f"E2E setup failed: {e}")
 
     finally:
