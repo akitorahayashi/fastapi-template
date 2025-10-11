@@ -78,14 +78,8 @@ def e2e_setup() -> Generator[None, None, None]:
     compose_down_command = base_compose_command + ["down", "--remove-orphans"]
 
     try:
-        # Prepare environment variables for subprocess
-        env = os.environ.copy()
-        env["USE_SQLITE"] = "false"
-        # E2E tests are expected to use real services
-        # env["USE_MOCK_SERVICE_A"] = "false"
-
         print("\n🚀 Starting E2E test services with docker-compose...")
-        subprocess.run(compose_up_command, check=True, timeout=300, env=env)
+        subprocess.run(compose_up_command, check=True, timeout=300)
 
         _wait_for_service(health_url, timeout=30, interval=5)
 
@@ -93,10 +87,10 @@ def e2e_setup() -> Generator[None, None, None]:
 
     except (subprocess.CalledProcessError, TimeoutError) as e:
         print(f"\n🛑 E2E setup failed: {e}")
-        subprocess.run(compose_down_command, check=False, env=env)  # Attempt cleanup
+        subprocess.run(compose_down_command, check=False)  # Attempt cleanup
         pytest.fail(f"E2E setup failed: {e}")
 
     finally:
         # Stop services
         print("\n🛑 Stopping E2E services...")
-        subprocess.run(compose_down_command, check=False, env=env)
+        subprocess.run(compose_down_command, check=False)
