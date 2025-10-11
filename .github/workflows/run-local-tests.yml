@@ -3,9 +3,6 @@ name: Run Local Tests
 on:
   workflow_call:
 
-permissions:
-  contents: read
-
 jobs:
   run-local-tests:
     runs-on: ubuntu-latest

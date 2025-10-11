@@ -200,7 +200,7 @@ wheels = [
 ]
 
 [[package]]
-name = "fastapi-template"
+name = "fapi-tmpl"
 version = "1.0.0"
 source = { virtual = "." }
 dependencies = [

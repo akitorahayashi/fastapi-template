@@ -7,18 +7,11 @@ import httpx
 import pytest
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load .env file to get Docker Compose port configuration
 load_dotenv()
 
-# Set environment variables for Docker Compose
-os.environ["HOST_BIND_IP"] = os.getenv("HOST_BIND_IP", "127.0.0.1")
-os.environ["TEST_PORT"] = os.getenv("TEST_PORT", "8002")
-
-
-@pytest.fixture(autouse=True)
-def setup_e2e_test(setup_e2e_test_env):
-    """Set environment variables for e2e tests."""
-    pass
+TEST_HOST = os.getenv("FAPI_TEMPL_HOST_BIND_IP", "127.0.0.1")
+TEST_PORT = int(os.getenv("FAPI_TEMPL_TEST_PORT", "8002"))
 
 
 @pytest.fixture(scope="session")
@@ -27,9 +20,7 @@ def api_base_url():
     Provides the base URL for the API service.
     Uses the e2e_setup fixture for container management.
     """
-    host_bind_ip = os.getenv("HOST_BIND_IP", "127.0.0.1")
-    host_port = os.getenv("TEST_PORT", "8002")
-    return f"http://{host_bind_ip}:{host_port}"
+    return f"http://{TEST_HOST}:{TEST_PORT}"
 
 
 def _is_service_ready(url: str, expected_status: int = 200) -> bool:
@@ -65,47 +56,32 @@ def e2e_setup() -> Generator[None, None, None]:
     This fixture assumes 'make e2e-test' will manage the containers,
     but it performs the health check wait just in case.
     """
-    use_sudo = os.getenv("SUDO") == "true"
-    docker_command = ["sudo", "docker"] if use_sudo else ["docker"]
+    health_url = f"http://{TEST_HOST}:{TEST_PORT}/health"
 
-    host_bind_ip = os.getenv("HOST_BIND_IP", "127.0.0.1")
-    host_port = os.getenv("TEST_PORT", "8002")
-    health_url = f"http://{host_bind_ip}:{host_port}/health"
-
-    project_name = os.getenv("PROJECT_NAME", "fastapi-template")
+    project_name = os.getenv("PROJECT_NAME", "fapi-tmpl")
     test_project_name = f"{project_name}-test"
 
+    # Define base compose command
+    base_compose_command = [
+        "docker",
+        "compose",
+        "-f",
+        "docker-compose.yml",
+        "-f",
+        "docker-compose.test.override.yml",
+        "--project-name",
+        test_project_name,
+    ]
+
     # Define compose commands
-    compose_up_command = docker_command + [
-        "compose",
-        "-f",
-        "docker-compose.yml",
-        "-f",
-        "docker-compose.test.override.yml",
-        "--project-name",
-        test_project_name,
-        "up",
-        "-d",
-        "--build",  # e2e-test always performs build
-    ]
-    compose_down_command = docker_command + [
-        "compose",
-        "-f",
-        "docker-compose.yml",
-        "-f",
-        "docker-compose.test.override.yml",
-        "--project-name",
-        test_project_name,
-        "down",
-        "--remove-orphans",
-    ]
+    compose_up_command = base_compose_command + ["up", "-d", "--build"]
+    compose_down_command = base_compose_command + ["down", "--remove-orphans"]
 
     try:
         print("\n🚀 Starting E2E test services with docker-compose...")
-        # Start containers (mimics/ensures startup by make e2e-test)
         subprocess.run(compose_up_command, check=True, timeout=300)
 
-        _wait_for_service(health_url, timeout=120, interval=5)
+        _wait_for_service(health_url, timeout=30, interval=5)
 
         yield
 
