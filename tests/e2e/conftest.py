@@ -87,7 +87,6 @@ def e2e_setup() -> Generator[None, None, None]:
 
     except (subprocess.CalledProcessError, TimeoutError) as e:
         print(f"\n🛑 E2E setup failed: {e}")
-        subprocess.run(compose_down_command, check=False)  # Attempt cleanup
         pytest.fail(f"E2E setup failed: {e}")
 
     finally:

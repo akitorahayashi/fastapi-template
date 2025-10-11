@@ -43,9 +43,7 @@ def start_server():
                 "--port",
                 str(TEST_PORT),
             ],
-            env=env,  # Pass environment variables to subprocess
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            env=env,
         )
 
         # Wait for server to be ready by polling health endpoint
