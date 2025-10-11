@@ -7,19 +7,11 @@ import httpx
 import pytest
 from dotenv import load_dotenv
 
-from tests.envs import setup_e2e_test_env
-
 # Load .env file to get Docker Compose port configuration
 load_dotenv()
 
 TEST_HOST = os.getenv("FAPI_TEMPL_HOST_BIND_IP", "127.0.0.1")
 TEST_PORT = int(os.getenv("FAPI_TEMPL_TEST_PORT", "8002"))
-
-
-@pytest.fixture(autouse=True)
-def setup_e2e_test(monkeypatch):
-    """Setup environment variables for E2E tests."""
-    setup_e2e_test_env(monkeypatch)
 
 
 @pytest.fixture(scope="session")
@@ -86,8 +78,14 @@ def e2e_setup() -> Generator[None, None, None]:
     compose_down_command = base_compose_command + ["down", "--remove-orphans"]
 
     try:
+        # Prepare environment variables for subprocess
+        env = os.environ.copy()
+        env["USE_SQLITE"] = "false"
+        # E2E tests are expected to use real services
+        # env["USE_MOCK_SERVICE_A"] = "false"
+
         print("\n🚀 Starting E2E test services with docker-compose...")
-        subprocess.run(compose_up_command, check=True, timeout=300)
+        subprocess.run(compose_up_command, check=True, timeout=300, env=env)
 
         _wait_for_service(health_url, timeout=30, interval=5)
 
@@ -95,10 +93,10 @@ def e2e_setup() -> Generator[None, None, None]:
 
     except (subprocess.CalledProcessError, TimeoutError) as e:
         print(f"\n🛑 E2E setup failed: {e}")
-        subprocess.run(compose_down_command, check=False)  # Attempt cleanup
+        subprocess.run(compose_down_command, check=False, env=env)  # Attempt cleanup
         pytest.fail(f"E2E setup failed: {e}")
 
     finally:
         # Stop services
         print("\n🛑 Stopping E2E services...")
-        subprocess.run(compose_down_command, check=False)
+        subprocess.run(compose_down_command, check=False, env=env)
